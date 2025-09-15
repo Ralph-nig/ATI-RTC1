@@ -137,7 +137,7 @@
                                         </td>
                                         <td>
                                             <div style="font-weight: 600;">{{ number_format($supply->quantity) }} {{ $supply->unit }}</div>
-                                            <div style="font-size: 12px; color: #6c757d;">â‚±{{ number_format($supply->unit_price, 2) }} each</div>
+                                            <div style="font-size: 12px; color: #6c757d;">₱{{ number_format($supply->unit_price, 2) }} each</div>
                                             @if($supply->isLowStock())
                                                 <span class="status-badge status-low-stock">
                                                     <i class="fas fa-exclamation-triangle"></i>
