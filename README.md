@@ -7,9 +7,9 @@ Built with **Laravel**, **MySQL/MariaDB**, and **Bootstrap**.
 ---
 
 ## Features
+- User Creation (Google Authentication)
 - User authentication (Admin & User roles)
 - Supply inventory management (add, update, delete)
-- 
 - 
 - 
 - 
@@ -65,6 +65,10 @@ php artisan serve
 ```
 
 Visit agrisupply.test
+
+### 8. Account Creation 
+1. User will create an account in the sign-up form
+2. User may use a google account
 
 ## User Roles
 Admin: Manage users, supplies, and help requests
