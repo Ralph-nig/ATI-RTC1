@@ -12,6 +12,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <style>
+        
         .reports-content {
             flex: 1;
             background: #296218;

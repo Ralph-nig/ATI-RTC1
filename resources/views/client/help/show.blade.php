@@ -78,6 +78,18 @@
 </div>
 
 <style>
+.details {
+    position: relative;
+    width: calc(100% - 300px) !important;
+    left: 300px !important;
+    min-height: 100vh;
+    background: #f5f5f5;
+    transition: 0.5s;
+    padding: 20px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+
 .help-detail-container {
     max-width: 100%;
 }
