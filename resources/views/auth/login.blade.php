@@ -181,7 +181,7 @@
         }
 
         .invalid-feedback {
-            display: block;
+            display: none; /* Hide inline errors since we're using popup */
             width: 100%;
             margin-top: 8px;
             font-size: 0.875rem;
@@ -350,6 +350,85 @@
             text-decoration: underline;
         }
 
+        /* Error Modal Styles */
+        .error-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .error-modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .error-modal-icon {
+            width: 60px;
+            height: 60px;
+            background: #dc3545;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 24px;
+        }
+
+        .error-modal-title {
+            color: #dc3545;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .error-modal-message {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .error-modal-close {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .error-modal-close:hover {
+            background: #c82333;
+        }
+
         /* Mobile responsiveness */
         @media (max-width: 480px) {
             body {
@@ -382,6 +461,16 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
+            }
+
+            .error-modal-content {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                padding: 30px 25px;
+                width: 95%;
+                max-width: 350px;
             }
         }
 
@@ -521,7 +610,62 @@
         </form>
     </div>
 
+    <!-- Error Modal -->
+    <div id="errorModal" class="error-modal">
+        <div class="error-modal-content">
+            <div class="error-modal-icon">
+                <ion-icon name="close-circle-outline"></ion-icon>
+            </div>
+            <h3 class="error-modal-title">Login Failed</h3>
+            <p class="error-modal-message">Invalid email or password. Please try again.</p>
+            <button class="error-modal-close" onclick="closeErrorModal()">Try Again</button>
+        </div>
+    </div>
+
     <script>
+        // Check for authentication errors on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if there are any authentication errors
+            const hasEmailError = document.querySelector('.form-control[name="email"].is-invalid');
+            const hasPasswordError = document.querySelector('.form-control[name="password"].is-invalid');
+            
+            // If there are authentication errors, show the modal instead of inline errors
+            if (hasEmailError || hasPasswordError) {
+                showErrorModal();
+            }
+        });
+
+        function showErrorModal() {
+            document.getElementById('errorModal').style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        function closeErrorModal() {
+            document.getElementById('errorModal').style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+            
+            // Clear the form and remove error classes
+            document.getElementById('email').classList.remove('is-invalid');
+            document.getElementById('password').classList.remove('is-invalid');
+            document.getElementById('password').value = ''; // Clear password field
+            document.getElementById('email').focus(); // Focus back to email field
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('errorModal');
+            if (event.target == modal) {
+                closeErrorModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeErrorModal();
+            }
+        });
+
         function togglePassword() {
             const passwordField = document.getElementById('password');
             const toggleIcon = document.getElementById('toggle-icon');
