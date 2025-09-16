@@ -15,10 +15,8 @@ class ReportController extends Controller
     // RSMI Report
     public function rsmi(Request $request)
     {
-        // Add your data fetching logic here
-        $rsmiData = collect(); // Replace with actual data query
+        $rsmiData = collect(); 
         
-        // You can add filtering logic based on request parameters
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
         $department = $request->input('department');
