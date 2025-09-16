@@ -11,7 +11,7 @@
 
     @if($isEdit && auth()->user()->isAdmin())
         {{-- Admin Edit Form --}}
-        <form action="{{ route('help.update', $helpRequest->id) }}" method="POST" class="help-form">
+        <form action="{{ route('client.help.update', $helpRequest->id) }}" method="POST" class="help-form">
             @csrf
             @method('PUT')
             

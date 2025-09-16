@@ -22,7 +22,7 @@
                 <div class="help-header">
                     <h1><ion-icon name="help-circle-outline"></ion-icon> Help & Support</h1>
                     @if(!auth()->user()->isAdmin())
-                    <a href="{{ route('help.create') }}" class="btn btn-primary">
+                    <a href="{{ route('client.help.create') }}" class="btn btn-primary">
                         <ion-icon name="add-outline"></ion-icon> Submit New Request
                     </a>
                     @endif
@@ -59,9 +59,9 @@
                                 @endif
                             </div>
                             <div class="help-card-actions">
-                                <a href="{{ route('help.show', $request->id) }}" class="btn btn-sm btn-outline">View Details</a>
+                                <a href="{{ route('client.help.show', $request->id) }}" class="btn btn-sm btn-outline">View Details</a>
                                 @if(auth()->user()->isAdmin() || ($request->user_id === auth()->id() && $request->status === 'pending'))
-                                    <a href="{{ route('help.edit', $request->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                    <a href="{{ route('client.help.edit', $request->id) }}" class="btn btn-sm btn-warning">Edit</a>
                                 @endif
                                 @if(auth()->user()->isAdmin() || ($request->user_id === auth()->id() && $request->status === 'pending'))
                                     <button class="btn btn-sm btn-danger" onclick="deleteRequest({{ $request->id }})">Delete</button>
