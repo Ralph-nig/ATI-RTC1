@@ -45,7 +45,6 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     
     // Additional supplies routes
     Route::get('supplies-export', [SuppliesController::class, 'export'])->name('supplies.export');
-    Route::post('supplies-bulk-action', [SuppliesController::class, 'bulkAction'])->name('supplies.bulk-action');
     
     // Report routes
     Route::resource('reports', ReportController::class)->names([

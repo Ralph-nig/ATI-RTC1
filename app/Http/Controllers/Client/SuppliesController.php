@@ -138,33 +138,6 @@ class SuppliesController extends Controller
     }
 
     /**
-     * Bulk actions for supplies
-     */
-    public function bulkAction(Request $request)
-    {
-        $action = $request->action;
-        $ids = $request->ids;
-
-        if (!$ids || !is_array($ids)) {
-            return response()->json(['error' => 'No items selected'], 400);
-        }
-
-        switch ($action) {
-            case 'delete':
-                Supplies::whereIn('id', $ids)->delete();
-                return response()->json(['success' => 'Selected items deleted successfully']);
-                
-            case 'update_category':
-                $category = $request->category;
-                Supplies::whereIn('id', $ids)->update(['category' => $category]);
-                return response()->json(['success' => 'Category updated for selected items']);
-                
-            default:
-                return response()->json(['error' => 'Invalid action'], 400);
-        }
-    }
-
-    /**
      * Export supplies data
      */
     public function export()
