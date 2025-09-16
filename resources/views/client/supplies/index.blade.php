@@ -83,7 +83,12 @@
                             <thead>
                                 <tr>
                                     <th>
-                                        <input type="checkbox" id="selectAll">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'id', 'sort_direction' => request('sort_direction') == 'asc' ? 'desc' : 'asc']) }}">
+                                            ID
+                                            @if(request('sort_by') == 'id')
+                                                <i class="fas fa-sort-{{ request('sort_direction') == 'asc' ? 'up' : 'down' }}"></i>
+                                            @endif
+                                        </a>
                                     </th>
                                     <th>
                                         <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'name', 'sort_direction' => request('sort_direction') == 'asc' ? 'desc' : 'asc']) }}">
@@ -124,7 +129,9 @@
                                 @foreach($supplies as $supply)
                                     <tr>
                                         <td>
-                                            <input type="checkbox" class="supply-checkbox" value="{{ $supply->id }}">
+                                            <div style="font-weight: 600; color: #6c757d; font-size: 14px;">
+                                                #{{ str_pad($supply->id, 4, '0', STR_PAD_LEFT) }}
+                                            </div>
                                         </td>
                                         <td>
                                             <div style="font-weight: 600; margin-bottom: 4px;">{{ $supply->name }}</div>
@@ -159,7 +166,7 @@
                                                     {{ $supply->category }}
                                                 </span>
                                             @else
-                                                <span style="color: #6c757d;">â€”</span>
+                                                <span style="color: #6c757d;">—</span>
                                             @endif
                                         </td>
                                         <td>
@@ -256,21 +263,7 @@
                 }
                 window.location.href = url.toString();
             });
-
-            // Select all functionality
-            $('#selectAll').on('change', function() {
-                $('.supply-checkbox').prop('checked', $(this).prop('checked'));
-            });
-
-            // Individual checkbox handling
-            $('.supply-checkbox').on('change', function() {
-                const totalCheckboxes = $('.supply-checkbox').length;
-                const checkedCheckboxes = $('.supply-checkbox:checked').length;
-                
-                $('#selectAll').prop('indeterminate', checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes);
-                $('#selectAll').prop('checked', checkedCheckboxes === totalCheckboxes);
-            });
         });
     </script>
 </body>
-</html> 
+</html>
