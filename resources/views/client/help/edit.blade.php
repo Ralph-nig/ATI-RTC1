@@ -13,8 +13,8 @@
         
         @include('client.help.form', [
             'isEdit' => true,
-            'formAction' => route('help.update', $helpRequest->id),
-            'backUrl' => route('help.show', $helpRequest->id),
+            'formAction' => route('client.help.update', $helpRequest->id),
+            'backUrl' => route('client.help.show', $helpRequest->id),
             'helpRequest' => $helpRequest
         ])
     </div>

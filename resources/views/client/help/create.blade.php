@@ -13,7 +13,7 @@
         
         @include('client.help.form', [
             'isEdit' => false,
-            'formAction' => route('help.store'),
+            'formAction' => route('client.help.store'),
             'backUrl' => route('client.help.index'),
             'helpRequest' => null
         ])

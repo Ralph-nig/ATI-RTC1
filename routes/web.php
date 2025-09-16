@@ -63,9 +63,15 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
         'index' => 'client.stockcard.index'
     ]);
     
-    // Help routes - FIXED: Use standard resource route names
+    // Help routes 
     Route::resource('help', HelpController::class)->names([
         'index' => 'client.help.index',
+        'create' => 'client.help.create',
+        'store' => 'client.help.store',
+        'show' => 'client.help.show',
+        'edit' => 'client.help.edit',
+        'update' => 'client.help.update',
+        'destroy' => 'client.help.destroy'
     ]);
     
     // Notification routes
