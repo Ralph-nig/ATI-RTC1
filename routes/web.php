@@ -61,6 +61,10 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::resource('stockcard', StockCardController::class)->names([
         'index' => 'client.stockcard.index'
     ]);
+    // Stock Card routes
+    Route::resource('propertycard', StockCardController::class)->names([
+        'index' => 'client.propertycard.index'
+    ]);
     
     // Help routes 
     Route::resource('help', HelpController::class)->names([
