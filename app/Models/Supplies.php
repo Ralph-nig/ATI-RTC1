@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 
 class Supplies extends Model
@@ -24,6 +25,14 @@ class Supplies extends Model
         'purchase_date' => 'date',
         'unit_price' => 'decimal:2'
     ];
+
+    /**
+     * Get the stock movements for the supply
+     */
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
 
     // Check if supply is low stock
     public function isLowStock()
