@@ -57,11 +57,20 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::get('report/ppes', [ReportController::class, 'ppes'])->name('client.report.ppes');
     Route::get('report/rpc-ppe', [ReportController::class, 'rpcPpe'])->name('client.report.rpc-ppe');
 
-    // Stock Card routes
-    Route::resource('stockcard', StockCardController::class)->names([
-        'index' => 'client.stockcard.index'
-    ]);
-    // Stock Card routes
+    // Stock Card routes (Fixed naming convention)
+    Route::prefix('stockcard')->name('client.stockcard.')->group(function () {
+        Route::get('/', [StockCardController::class, 'index'])->name('index');
+        Route::get('/show/{id}', [StockCardController::class, 'show'])->name('show');
+        
+        // Stock In routes
+        Route::get('/stock-in', [StockCardController::class, 'stockIn'])->name('stock-in');
+        Route::post('/stock-in', [StockCardController::class, 'processStockIn'])->name('stock-in.process');
+        
+        // Stock Out routes
+        Route::get('/stock-out', [StockCardController::class, 'stockOut'])->name('stock-out');
+        Route::post('/stock-out', [StockCardController::class, 'processStockOut'])->name('stock-out.process');
+    });
+    
     Route::resource('propertycard', StockCardController::class)->names([
         'index' => 'client.propertycard.index'
     ]);
