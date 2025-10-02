@@ -70,7 +70,7 @@ class SuppliesController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'quantity' => 'required|integer|min:0',
+            'quantity' => 'integer|min:0',
             'unit_price' => 'required|numeric|min:0',
             'unit' => 'required|string|max:50',
             'category' => 'nullable|string|max:255',
@@ -112,7 +112,7 @@ class SuppliesController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'quantity' => 'required|integer|min:0',
+            'quantity' => 'integer|min:0',
             'unit_price' => 'required|numeric|min:0',
             'unit' => 'required|string|max:50',
             'category' => 'nullable|string|max:255',

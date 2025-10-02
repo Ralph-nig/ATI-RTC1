@@ -1,5 +1,6 @@
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 <link rel="stylesheet" href="{{ asset('css/help.css') }}">
+<link rel="stylesheet" href="{{ asset('css/notifications.css') }}">
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -21,7 +22,7 @@
                 </div>
                 <div class="header-actions">
                     @if(auth()->user()->isAdmin() || ($helpRequest->user_id === auth()->id() && $helpRequest->status === 'pending'))
-                        <a href="{{ route('help.edit', $helpRequest->id) }}" class="btn btn-warning">
+                        <a href="{{ route('client.help.edit', $helpRequest->id) }}" class="btn btn-warning">
                             <ion-icon name="create-outline"></ion-icon> Edit
                         </a>
                     @endif

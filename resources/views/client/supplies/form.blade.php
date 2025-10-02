@@ -63,7 +63,7 @@
             </div>
             
             <!-- Quantity -->
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <label for="quantity" class="form-label required">Quantity</label>
                 <div class="input-group">
                     <i class="fas fa-calculator"></i>
@@ -74,7 +74,7 @@
                 @error('quantity')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
-            </div>
+            </div> -->
             
             <!-- Unit -->
             <div class="form-group">

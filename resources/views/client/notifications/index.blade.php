@@ -124,7 +124,7 @@ function getNotificationUrl(notification) {
 function getNotificationUrl($notification) {
     if ($notification->type === 'help_request' || $notification->type === 'help_response') {
         if ($notification->data && isset($notification->data['help_request_id'])) {
-            return route('help.show', $notification->data['help_request_id']);
+            return route('client.help.show', $notification->data['help_request_id']); // Changed from 'help.show' to 'client.help.show'
         }
     }
     return '#';
