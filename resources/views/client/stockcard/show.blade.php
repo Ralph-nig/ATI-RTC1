@@ -20,32 +20,12 @@
             
             <div class="supplies-container">
                 <!-- Header Section -->
-                <div class="supplies-header">
-                    <div class="header-left">
-                        <a href="{{ route('client.stockcard.index') }}" class="back-button">
-                            <i class="fas fa-arrow-left"></i>
-                            Back to Stock Card
-                        </a>
-                        <h1 class="supplies-title">
-                            <i class="fas fa-clipboard-list"></i>
-                            Stock Card Details
-                        </h1>
-                    </div>
+                <div class="form-header">
+                    <a href="{{ route('client.stockcard.index') }}" class="back-button">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Stock Card
+                    </a>
                     
-                    <div class="action-buttons">
-                        <a href="{{ route('client.stockcard.stock-in') }}?supply_id={{ $supply->id }}" class="btn btn-success">
-                            <i class="fas fa-arrow-down"></i>
-                            Stock In
-                        </a>
-                        <a href="{{ route('client.stockcard.stock-out') }}?supply_id={{ $supply->id }}" class="btn btn-danger">
-                            <i class="fas fa-arrow-up"></i>
-                            Stock Out
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Supply Information Card -->
-                <div class="supply-info-card">
                     <div class="supply-info-header">
                         <div class="supply-title">
                             <h2>#{{ str_pad($supply->id, 4, '0', STR_PAD_LEFT) }} - {{ $supply->name }}</h2>
@@ -73,7 +53,7 @@
                             <span>{{ $supply->category ?: 'Uncategorized' }}</span>
                         </div>
                         <div class="detail-item">
-                            <label>Unit:</label>
+                            <label>Unit of Measurement:</label>
                             <span>{{ $supply->unit }}</span>
                         </div>
                         @if($supply->minimum_stock)
@@ -153,12 +133,7 @@
                                         </td>
                                         <td>
                                             <div class="description-display">
-                                                @if($movement->office_description)
-                                                    {{ $movement->office_description }}
-                                                    @if($movement->notes)
-                                                        <br><small class="text-muted">{{ $movement->notes }}</small>
-                                                    @endif
-                                                @elseif($movement->notes)
+                                                @if($movement->notes)
                                                     {{ $movement->notes }}
                                                 @else
                                                     <span class="no-description">No description provided</span>
@@ -216,24 +191,18 @@
             gap: 15px;
         }
 
-        .header-left {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
         .back-button {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 8px;
-            color: #6c757d;
+            color: rgba(255,255,255,0.8);
             text-decoration: none;
-            font-size: 14px;
-            transition: color 0.3s;
+            margin-bottom: 15px;
+            transition: color 0.3s ease;
         }
 
         .back-button:hover {
-            color: #495057;
+            color: white;
         }
 
         .supply-info-card {
@@ -255,7 +224,7 @@
 
         .supply-title h2 {
             margin: 0 0 8px 0;
-            color: #333;
+            color: #dee2e6;
             font-size: 24px;
             font-weight: 700;
         }
@@ -274,7 +243,7 @@
 
         .stock-label {
             font-size: 12px;
-            color: #6c757d;
+            color: #dee2e6;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
@@ -328,14 +297,14 @@
 
         .detail-item label {
             font-size: 12px;
-            color: #6c757d;
+            color: #dee2e6;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .detail-item span {
-            color: #333;
+            color: #dee2e6;
             font-weight: 500;
             font-size: 16px;
         }
