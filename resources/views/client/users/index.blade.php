@@ -70,16 +70,16 @@
                                     <th style="width: 5%; text-align: center;">
                                         <i class="fas fa-hashtag"></i>
                                     </th>
-                                    <th style="width: 25%;">
+                                    <th style="width: 20%;">
                                         <i class="fas fa-user" style="margin-right: 5px;"></i>User
                                     </th>
-                                    <th style="width: 25%;">
+                                    <th style="width: 20%;">
                                         <i class="fas fa-envelope" style="margin-right: 5px;"></i>Email
                                     </th>
-                                    <th style="width: 15%; text-align: center;">
+                                    <th style="width: 10%; text-align: center;">
                                         <i class="fas fa-user-tag" style="margin-right: 5px;"></i>Role
                                     </th>
-                                    <th style="width: 15%; text-align: center;">
+                                    <th style="width: 30%; text-align: center;">
                                         <i class="fas fa-shield-alt" style="margin-right: 5px;"></i>Permissions
                                     </th>
                                     <th style="width: 15%; text-align: center;">Actions</th>
@@ -124,10 +124,24 @@
                                                     Full Access
                                                 </span>
                                             @else
-                                                <span class="permission-badge permission-limited">
-                                                    <i class="fas fa-lock"></i>
-                                                    Limited
-                                                </span>
+                                                <div class="permissions-display" style="justify-content: center;">
+                                                    <span class="perm-badge {{ $userItem->can_create ? 'perm-create' : 'perm-disabled' }}" 
+                                                          title="{{ $userItem->can_create ? 'Can Create' : 'Cannot Create' }}">
+                                                        <i class="fas fa-plus-circle"></i>C
+                                                    </span>
+                                                    <span class="perm-badge {{ $userItem->can_read ? 'perm-read' : 'perm-disabled' }}" 
+                                                          title="{{ $userItem->can_read ? 'Can Read' : 'Cannot Read' }}">
+                                                        <i class="fas fa-eye"></i>R
+                                                    </span>
+                                                    <span class="perm-badge {{ $userItem->can_update ? 'perm-update' : 'perm-disabled' }}" 
+                                                          title="{{ $userItem->can_update ? 'Can Update' : 'Cannot Update' }}">
+                                                        <i class="fas fa-edit"></i>U
+                                                    </span>
+                                                    <span class="perm-badge {{ $userItem->can_delete ? 'perm-delete' : 'perm-disabled' }}" 
+                                                          title="{{ $userItem->can_delete ? 'Can Delete' : 'Cannot Delete' }}">
+                                                        <i class="fas fa-trash-alt"></i>D
+                                                    </span>
+                                                </div>
                                             @endif
                                         </td>
                                         <td style="text-align: center;">
@@ -202,21 +216,18 @@
                     const row = $(this);
                     const name = row.find('.user-name').text().toLowerCase().trim();
                     const email = row.find('.user-email').text().toLowerCase().trim();
-                    const userRole = row.data('role'); // Get role from data attribute
+                    const userRole = row.data('role');
                     
                     let showRow = true;
                     
-                    // Search filter - check if search term matches name or email
                     if (searchTerm && !name.includes(searchTerm) && !email.includes(searchTerm)) {
                         showRow = false;
                     }
                     
-                    // Role filter - check if role matches selected filter
                     if (roleFilter && userRole !== roleFilter) {
                         showRow = false;
                     }
                     
-                    // Show/hide the row
                     if (showRow) {
                         row.show();
                     } else {
@@ -224,7 +235,6 @@
                     }
                 });
 
-                // Show message if no results found
                 updateNoResultsMessage();
             }
 
@@ -232,11 +242,9 @@
                 const visibleRows = $('.user-row:visible').length;
                 const tableContainer = $('.users-table-container');
                 
-                // Remove existing no results message
                 $('.no-results-message').remove();
                 
                 if (visibleRows === 0 && $('.user-row').length > 0) {
-                    // Add no results message
                     tableContainer.append(`
                         <div class="no-results-message" style="text-align: center; padding: 40px; color: #6c757d;">
                             <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
@@ -274,4 +282,4 @@
         }
     </script>
 </body>
-</html>
+</html

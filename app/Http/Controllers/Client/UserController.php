@@ -49,12 +49,26 @@ class UserController extends Controller
      */
     public function store(UserRequest $request)
     {
-        User::create([
-            'name'     => $request['name'],
-            'email'    => $request['email'],
-            'password' => bcrypt($request['password']),
-            'role'     => $request['role'] ?? 'user', // Add role support
-        ]);
+        $validated = $request->validated();
+
+        // If admin role, set all permissions to true
+        if ($validated['role'] === 'admin') {
+            $validated['can_create'] = true;
+            $validated['can_read'] = true;
+            $validated['can_update'] = true;
+            $validated['can_delete'] = true;
+        } else {
+            // For regular users, use submitted values or defaults
+            $validated['can_create'] = $request->boolean('can_create', false);
+            $validated['can_read'] = $request->boolean('can_read', true);
+            $validated['can_update'] = $request->boolean('can_update', false);
+            $validated['can_delete'] = $request->boolean('can_delete', false);
+        }
+
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['status'] = $validated['status'] ?? 'active';
+
+        User::create($validated);
 
         return redirect()->route('users.index')->with('success', 'User has been successfully created!');
     }
@@ -72,48 +86,45 @@ class UserController extends Controller
      */
     public function edit(string $id)
     {
-        $data['user'] = User::find($id);
+        $data['user'] = User::findOrFail($id);
         return view('client.users.edit', $data);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UserRequest $request, string $id)
     {
-        // Add validation for the update
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'required|in:user,admin',
-            'status' => 'nullable|in:active,inactive',
-        ]);
-
-        $user = User::find($id);
+        $validated = $request->validated();
+        $user = User::findOrFail($id);
         
-        if (!$user) {
-            return redirect()->to('client/users')->with('error', 'User not found.');
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->role = $validated['role'];
+        $user->status = $validated['status'] ?? 'active';
+        
+        // If admin role, set all permissions to true
+        if ($validated['role'] === 'admin') {
+            $user->can_create = true;
+            $user->can_read = true;
+            $user->can_update = true;
+            $user->can_delete = true;
+        } else {
+            // For regular users, use submitted values
+            $user->can_create = $request->boolean('can_create', false);
+            $user->can_read = $request->boolean('can_read', true);
+            $user->can_update = $request->boolean('can_update', false);
+            $user->can_delete = $request->boolean('can_delete', false);
         }
         
-        $user->name = $request['name'];
-        $user->email = $request['email'];
-        $user->role = $request['role']; // Add role update
-        
-        // Add status update if provided
-        if ($request->has('status')) {
-            $user->status = $request['status'];
-        }
-        
-        // Only update password if provided and not empty
-        if (!empty($request['password'])) {
-            $user->password = Hash::make($request['password']); // Use Hash::make instead of bcrypt
+        // Only update password if provided
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
         }
         
         $user->save();
 
-        // Redirect to users index instead of back
-        return redirect()->to('client/users')->with('success', 'User information has been updated successfully!');
+        return redirect()->route('users.index')->with('success', 'User information has been updated successfully!');
     }
 
     /**
@@ -121,11 +132,7 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        $user = User::find($id);
-        
-        if (!$user) {
-            return response()->json(['error' => 'User not found.'], 404);
-        }
+        $user = User::findOrFail($id);
         
         // Prevent admin from deleting their own account
         if ($user->id === auth()->user()->id) {
@@ -136,4 +143,4 @@ class UserController extends Controller
 
         return response()->json(['message' => 'User deleted successfully.'], 200);
     }
-}   
+}

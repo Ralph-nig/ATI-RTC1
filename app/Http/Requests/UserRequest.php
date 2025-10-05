@@ -21,11 +21,44 @@ class UserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $id= $this->input('id');
+        $userId = $this->route('user'); // Get user ID from route parameter
+        
+        $rules = [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email' . ($userId ? ',' . $userId : ''),
+            'role' => 'required|in:user,admin',
+            'status' => 'nullable|in:active,inactive',
+            'can_create' => 'nullable|boolean',
+            'can_read' => 'nullable|boolean',
+            'can_update' => 'nullable|boolean',
+            'can_delete' => 'nullable|boolean',
+        ];
+
+        // Password is required for new users, optional for updates
+        if ($this->isMethod('post')) {
+            $rules['password'] = 'required|string|min:8|confirmed';
+        } else {
+            $rules['password'] = 'nullable|string|min:8|confirmed';
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
         return [
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email,' . (($id) ? $id : null) . ',id',
-            'password' => 'nullable|required_if:id,,|min:8|confirmed'
+            'name.required' => 'Please enter the user\'s full name.',
+            'email.required' => 'Please enter an email address.',
+            'email.email' => 'Please enter a valid email address.',
+            'email.unique' => 'This email address is already registered.',
+            'password.required' => 'Please enter a password.',
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'Password confirmation does not match.',
+            'role.required' => 'Please select a user role.',
+            'role.in' => 'Invalid role selected.',
         ];
     }
 }
