@@ -13,6 +13,11 @@ class SuppliesController extends Controller
      */
     public function index(Request $request)
     {
+        // Check read permission
+        if (!auth()->user()->hasPermission('read')) {
+            abort(403, 'You do not have permission to view supplies.');
+        }
+
         $query = Supplies::query();
 
         // Search functionality
@@ -56,6 +61,11 @@ class SuppliesController extends Controller
      */
     public function create()
     {
+        // Check create permission
+        if (!auth()->user()->hasPermission('create')) {
+            abort(403, 'You do not have permission to create supplies.');
+        }
+
         $categories = Supplies::distinct()->pluck('category')->filter();
         $suppliers = Supplies::distinct()->pluck('supplier')->filter();
         
@@ -67,6 +77,11 @@ class SuppliesController extends Controller
      */
     public function store(Request $request)
     {
+        // Check create permission
+        if (!auth()->user()->hasPermission('create')) {
+            abort(403, 'You do not have permission to create supplies.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -90,6 +105,11 @@ class SuppliesController extends Controller
      */
     public function show(Supplies $supply)
     {
+        // Check read permission
+        if (!auth()->user()->hasPermission('read')) {
+            abort(403, 'You do not have permission to view supply details.');
+        }
+
         return view('client.supplies.show', compact('supply'));
     }
 
@@ -98,6 +118,11 @@ class SuppliesController extends Controller
      */
     public function edit(Supplies $supply)
     {
+        // Check update permission
+        if (!auth()->user()->hasPermission('update')) {
+            abort(403, 'You do not have permission to edit supplies.');
+        }
+
         $categories = Supplies::distinct()->pluck('category')->filter();
         $suppliers = Supplies::distinct()->pluck('supplier')->filter();
         
@@ -109,6 +134,11 @@ class SuppliesController extends Controller
      */
     public function update(Request $request, Supplies $supply)
     {
+        // Check update permission
+        if (!auth()->user()->hasPermission('update')) {
+            abort(403, 'You do not have permission to update supplies.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -132,6 +162,11 @@ class SuppliesController extends Controller
      */
     public function destroy(Supplies $supply)
     {
+        // Check delete permission
+        if (!auth()->user()->hasPermission('delete')) {
+            return response()->json(['error' => 'You do not have permission to delete supplies.'], 403);
+        }
+
         $supply->delete();
 
         return redirect()->route('supplies.index')->with('success', 'Supply item deleted successfully!');
@@ -142,6 +177,11 @@ class SuppliesController extends Controller
      */
     public function export()
     {
+        // Check read permission for export
+        if (!auth()->user()->hasPermission('read')) {
+            abort(403, 'You do not have permission to export supplies.');
+        }
+
         $supplies = Supplies::all();
         
         $filename = 'supplies_' . date('Y-m-d') . '.csv';

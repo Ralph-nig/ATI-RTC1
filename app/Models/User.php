@@ -2,34 +2,47 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'status',
+        'can_create',
+        'can_read',
+        'can_update',
+        'can_delete',
+        'avatar',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
     protected $appends = ['created_date', 'avatar_url'];
 
     /**
@@ -42,24 +55,64 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'can_create' => 'boolean',
+            'can_read' => 'boolean',
+            'can_update' => 'boolean',
+            'can_delete' => 'boolean',
         ];
     }
 
+    /**
+     * Get formatted created date
+     */
     public function getCreatedDateAttribute()
     {
         return $this->created_at->format('d F, Y');
     }
 
+    /**
+     * Get avatar URL
+     */
     public function getAvatarUrlAttribute()
     {
         if ($this->avatar) {
-            return Storage::url($this->avatar);
+            return \Storage::url($this->avatar);
         }
 
         return asset('assets/img/noprofile.jpg');
     }
 
-    // Add relationships for help system
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if user has permission to perform an action
+     */
+    public function hasPermission(string $permission): bool
+    {
+        // Admins can do everything
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // Check specific permission
+        return match($permission) {
+            'create' => $this->can_create,
+            'read' => $this->can_read,
+            'update' => $this->can_update,
+            'delete' => $this->can_delete,
+            default => false,
+        };
+    }
+
+    /**
+     * Relationships
+     */
     public function helpRequests()
     {
         return $this->hasMany(HelpRequest::class);
@@ -78,10 +131,5 @@ class User extends Authenticatable
     public function unreadNotifications()
     {
         return $this->hasMany(Notification::class)->where('is_read', false);
-    }
-
-    public function isAdmin()
-    {
-        return $this->role === 'admin';
     }
 }
