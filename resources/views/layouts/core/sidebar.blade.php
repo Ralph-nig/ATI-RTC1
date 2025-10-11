@@ -16,6 +16,13 @@
                 <span class="title">Dashboard</span>
             </a>
         </li>
+
+        <li class="{{ Request::is('client/announcement*') ? 'hovered' : '' }}">
+            <a href="{{ route('client.announcement.index') }}">
+                <span class="icon"><ion-icon name="megaphone-outline"></ion-icon></span>
+                <span class="title">Announcements</span>
+            </a>
+        </li>
         
         @if(auth()->check() && auth()->user()->isAdmin())
             <li class="{{ Request::is('client/users*') ? 'hovered' : '' }}">
@@ -34,7 +41,7 @@
         </li>
         <li class="{{ Request::is('client/equipment*') ? 'hovered' : '' }}">
             <a href="{{ url('client/equipment') }}">
-                <span class="icon"><ion-icon name="archive-outline"></ion-icon></span>
+                <span class="icon"><ion-icon name="construct-outline"></ion-icon></span>
                 <span class="title">Equipment</span>
             </a>
         </li>
@@ -66,13 +73,6 @@
                     </a>
                 </li>
             </ul>
-        </li>
-
-        <li class="{{ Request::is('client/announcement*') ? 'hovered' : '' }}">
-            <a href="{{ route('client.announcement.index') }}">
-                <span class="icon"><ion-icon name="help-outline"></ion-icon></span>
-                <span class="title">Announcements</span>
-            </a>
         </li>
         
         <li class="{{ Request::is('client/help*') ? 'hovered' : '' }}">
