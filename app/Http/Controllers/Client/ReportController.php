@@ -15,7 +15,7 @@ class ReportController extends Controller
     // RSMI Report
     public function rsmi(Request $request)
     {
-        $rsmiData = collect(); 
+        $rsmiData = collect();  
         
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
