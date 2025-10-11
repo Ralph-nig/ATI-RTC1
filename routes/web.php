@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\SuppliesController;
+use App\Http\Controllers\Client\EquipmentController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\ReportController;
 use App\Http\Controllers\Client\StockCardController;
+use App\Http\Controllers\Client\PropertyCardController;
 use App\Http\Controllers\Client\ProfileController;
+use App\Http\Controllers\Client\AnnouncementController;
 use App\Http\Controllers\Client\HelpController;
 use App\Http\Controllers\Client\NotificationController;
 use App\Http\Controllers\HomeController;
@@ -42,10 +45,14 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     
     // Supplies routes with additional functionality
     Route::resource('supplies', SuppliesController::class);
-    
-    // Additional supplies routes
     Route::get('supplies-export', [SuppliesController::class, 'export'])->name('supplies.export');
-    
+
+    // Equipment routes with export functionality
+    Route::resource('equipment', EquipmentController::class)->names([
+        'index' => 'client.equipment.index'
+    ]);
+    Route::get('equipment-export', [EquipmentController::class, 'export'])->name('equipment.export');
+
     // Report routes
     Route::resource('reports', ReportController::class)->names([
         'index' => 'client.reports.index'
@@ -71,8 +78,12 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
         Route::post('/stock-out', [StockCardController::class, 'processStockOut'])->name('stock-out.process');
     });
     
-    Route::resource('propertycard', StockCardController::class)->names([
+    Route::resource('propertycard', PropertyCardController::class)->names([
         'index' => 'client.propertycard.index'
+    ]);
+
+    Route::resource('announcement', AnnouncementController::class)->names([
+        'index' => 'client.announcement.index'
     ]);
     
     // Help routes 

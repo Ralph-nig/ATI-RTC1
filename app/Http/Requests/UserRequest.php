@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UserRequest extends FormRequest
 {
@@ -25,9 +26,13 @@ class UserRequest extends FormRequest
         
         $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email' . ($userId ? ',' . $userId : ''),
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->ignore($userId),
+            ],
             'role' => 'required|in:user,admin',
-            'status' => 'nullable|in:active,inactive',
+            'status' => 'required|in:active,inactive', // Changed from nullable to required
             'can_create' => 'nullable|boolean',
             'can_read' => 'nullable|boolean',
             'can_update' => 'nullable|boolean',
@@ -59,6 +64,8 @@ class UserRequest extends FormRequest
             'password.confirmed' => 'Password confirmation does not match.',
             'role.required' => 'Please select a user role.',
             'role.in' => 'Invalid role selected.',
+            'status.required' => 'Please select a user status.',
+            'status.in' => 'Status must be either active or inactive.',
         ];
     }
 }

@@ -32,6 +32,12 @@
                 <span class="title">Supplies</span>
             </a>
         </li>
+        <li class="{{ Request::is('client/equipment*') ? 'hovered' : '' }}">
+            <a href="{{ url('client/equipment') }}">
+                <span class="icon"><ion-icon name="archive-outline"></ion-icon></span>
+                <span class="title">Equipment</span>
+            </a>
+        </li>
         <li class="{{ Request::is('client/reports*') ? 'hovered' : '' }}">
             <a href="{{ route('client.reports.index') }}">
                 <span class="icon"><ion-icon name="stats-chart-outline"></ion-icon></span>
@@ -60,6 +66,13 @@
                     </a>
                 </li>
             </ul>
+        </li>
+
+        <li class="{{ Request::is('client/announcement*') ? 'hovered' : '' }}">
+            <a href="{{ route('client.announcement.index') }}">
+                <span class="icon"><ion-icon name="help-outline"></ion-icon></span>
+                <span class="title">Announcements</span>
+            </a>
         </li>
         
         <li class="{{ Request::is('client/help*') ? 'hovered' : '' }}">

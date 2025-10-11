@@ -68,90 +68,40 @@
                 <!-- Stock Movements Table -->
                 <div class="supplies-table-container">
                     @if($movements->count() > 0)
-                        <table class="supplies-table stock-movements-table">
+                        <table class="stock-card-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 12%;">
-                                        <i class="fas fa-calendar-alt" style="margin-right: 5px;"></i>
-                                        Date
-                                    </th>
-                                    <th style="width: 15%;">
-                                        <i class="fas fa-hashtag" style="margin-right: 5px;"></i>
-                                        Reference
-                                    </th>
-                                    <th style="width: 12%; text-align: center;">
-                                        <i class="fas fa-arrow-down" style="margin-right: 5px; color: #28a745;"></i>
-                                        Stock In
-                                    </th>
-                                    <th style="width: 12%; text-align: center;">
-                                        <i class="fas fa-arrow-up" style="margin-right: 5px; color: #dc3545;"></i>
-                                        Stock Out
-                                    </th>
-                                    <th style="width: 35%;">
-                                        <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
-                                        Description
-                                    </th>
-                                    <th style="width: 14%; text-align: center;">
-                                        <i class="fas fa-balance-scale" style="margin-right: 5px;"></i>
-                                        Balance
-                                    </th>
+                                    <th rowspan="2" style="width: 12%;">Date</th>
+                                    <th rowspan="2" style="width: 14%;">Reference</th>
+                                    <th rowspan="2" style="width: 10%;">Receipt<br>Qty.</th>
+                                    <th colspan="2" style="width: 50%;">Issue</th>
+                                    <th rowspan="2" style="width: 14%;">Balance<br>Qty.</th>
+                                </tr>
+                                <tr>
+                                    <th style="width: 10%;">Qty.</th>
+                                    <th style="width: 40%;">Office</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($movements as $movement)
-                                    <tr class="movement-row movement-{{ $movement->type }}">
-                                        <td>
-                                            <div class="date-display">
-                                                <div class="date-main">{{ $movement->created_at->format('M d, Y') }}</div>
-                                                <div class="date-time">{{ $movement->created_at->format('h:i A') }}</div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="reference-display">
-                                                <span class="reference-text">{{ $movement->reference }}</span>
-                                            </div>
-                                        </td>
-                                        <td style="text-align: center;">
-                                            @if($movement->type === 'in')
-                                                <div class="quantity-display stock-in">
-                                                    <i class="fas fa-plus"></i>
-                                                    {{ $movement->quantity }} {{ $supply->unit }}
-                                                </div>
-                                            @else
-                                                <span class="no-value">—</span>
-                                            @endif
-                                        </td>
-                                        <td style="text-align: center;">
-                                            @if($movement->type === 'out')
-                                                <div class="quantity-display stock-out">
-                                                    <i class="fas fa-minus"></i>
-                                                    {{ $movement->quantity }} {{ $supply->unit }}
-                                                </div>
-                                            @else
-                                                <span class="no-value">—</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <div class="description-display">
-                                                @if($movement->notes)
-                                                    {{ $movement->notes }}
-                                                @else
-                                                    <span class="no-description">No description provided</span>
-                                                @endif
-                                            </div>
-                                        </td>
-                                        <td style="text-align: center;">
-                                            <div class="balance-display">
-                                                <span class="balance-value">{{ $movement->balance_after }} {{ $supply->unit }}</span>
-                                                <div class="balance-change">
-                                                    @if($movement->type === 'in')
-                                                        <span class="change-positive">+{{ $movement->quantity }}</span>
-                                                    @else
-                                                        <span class="change-negative">-{{ $movement->quantity }}</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </td>
+                                    <tr class="{{ $movement->type === 'in' ? 'stock-in-row' : '' }}">
+                                        <td>{{ $movement->created_at->format('F d, Y') }}</td>
+                                        <td>{{ $movement->reference }}</td>
+                                        @if($movement->type === 'in')
+                                            <!-- Stock In: Fill Receipt column -->
+                                            <td style="text-align: center;">{{ $movement->quantity }}</td>
+                                            <!-- Issue columns empty -->
+                                            <td style="text-align: center;"></td>
+                                            <td>{{ $movement->notes ?: 'Balance as of ' . $movement->created_at->format('F Y') }}</td>
+                                        @else
+                                            <!-- Stock Out: Receipt column empty -->
+                                            <td style="text-align: center;"></td>
+                                            <!-- Fill Issue columns -->
+                                            <td style="text-align: center;">{{ $movement->quantity }}</td>
+                                            <td>{{ $movement->notes ?: 'Issued' }}</td>
+                                        @endif
+                                        <!-- Balance column -->
+                                        <td style="text-align: center;">{{ $movement->balance_after }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -309,122 +259,92 @@
             font-size: 16px;
         }
 
-        .table-header {
-            margin-bottom: 20px;
-        }
-
-        .table-header h3 {
-            margin: 0;
-            color: #333;
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .stock-movements-table {
-            font-size: 14px;
-        }
-
-        .movement-row.movement-in {
-            background: rgba(40, 167, 69, 0.03);
-        }
-
-        .movement-row.movement-out {
-            background: rgba(220, 53, 69, 0.03);
-        }
-
-        .date-display {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .date-main {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .date-time {
-            font-size: 12px;
-            color: #6c757d;
-        }
-
-        .reference-display {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            color: #495057;
-            background: rgba(108, 117, 125, 0.1);
-            padding: 6px 10px;
-            border-radius: 6px;
+        /* Stock Card Table Styles */
+        .stock-card-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
             font-size: 13px;
         }
 
-        .quantity-display {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        .quantity-display.stock-in {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border: 1px solid rgba(40, 167, 69, 0.3);
-        }
-
-        .quantity-display.stock-out {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            border: 1px solid rgba(220, 53, 69, 0.3);
-        }
-
-        .no-value {
-            color: #adb5bd;
-            font-size: 18px;
-        }
-
-        .description-display {
-            line-height: 1.4;
-            color: #333;
-        }
-
-        .no-description {
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .balance-display {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .balance-value {
+        .stock-card-table thead tr:first-child th {
+            background: #f8f9fa;
+            padding: 12px 8px;
+            text-align: center;
             font-weight: 700;
             color: #333;
-            font-size: 16px;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
         }
 
-        .balance-change {
-            font-size: 11px;
+        .stock-card-table thead tr:last-child th {
+            background: #f8f9fa;
+            padding: 10px 8px;
+            text-align: center;
             font-weight: 600;
+            color: #495057;
+            border: 1px solid #dee2e6;
+            font-size: 12px;
         }
 
-        .change-positive {
-            color: #28a745;
+        /* Empty header cells for Date and Reference */
+        .stock-card-table thead tr:last-child th:first-child,
+        .stock-card-table thead tr:last-child th:nth-child(2) {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
         }
 
-        .change-negative {
-            color: #dc3545;
+        .stock-card-table tbody td {
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            color: #333;
+            vertical-align: middle;
+        }
+
+        .stock-card-table tbody tr {
+            background: white;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Yellow highlight for stock-in rows */
+        .stock-card-table tbody tr.stock-in-row {
+            background: #ffeb3b;
+        }
+
+        .stock-card-table tbody tr.stock-in-row td {
+            border-color: #fdd835;
+        }
+
+        .stock-card-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .stock-card-table tbody tr.stock-in-row:hover {
+            background: #ffe821;
         }
 
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+
+        @media print {
+            .back-button,
+            .supplies-header,
+            .sidebar,
+            .header {
+                display: none;
+            }
+
+            .supplies-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .stock-card-table {
+                page-break-inside: avoid;
+            }
         }
 
         @media (max-width: 768px) {
@@ -446,13 +366,13 @@
                 grid-template-columns: 1fr;
             }
 
-            .stock-movements-table {
-                font-size: 12px;
+            .stock-card-table {
+                font-size: 11px;
             }
 
-            .quantity-display {
-                font-size: 11px;
-                padding: 4px 8px;
+            .stock-card-table thead th,
+            .stock-card-table tbody td {
+                padding: 6px 4px;
             }
         }
     </style>
