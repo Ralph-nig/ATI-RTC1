@@ -48,6 +48,7 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::get('supplies-export', [SuppliesController::class, 'export'])->name('supplies.export');
 
     // Equipment routes with export functionality
+    Route::get('equipment/api/classifications', [EquipmentController::class, 'getClassifications'])->name('equipment.classifications');
     Route::resource('equipment', EquipmentController::class)->names([
         'index' => 'client.equipment.index'
     ]);

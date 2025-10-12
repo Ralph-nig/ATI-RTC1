@@ -14,17 +14,18 @@ class Equipment extends Model
     protected $table = 'equipment';
 
     protected $fillable = [
-        'article',
-        'description',
         'property_number',
+        'article',
+        'classification',
+        'description',
         'unit_of_measurement',
         'unit_value',
         'condition',
         'acquisition_date',
         'location',
-        'responsible_person', // Added
+        'responsible_person',
         'remarks',
-        'user_id' // Add this if you want to track who created the equipment
+        'user_id'
     ];
 
     protected $casts = [
@@ -98,6 +99,7 @@ class Equipment extends Model
         if ($search) {
             return $query->where(function($q) use ($search) {
                 $q->where('article', 'like', "%{$search}%")
+                  ->orWhere('classification', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%")
                   ->orWhere('property_number', 'like', "%{$search}%")
                   ->orWhere('location', 'like', "%{$search}%")

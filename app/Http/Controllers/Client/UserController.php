@@ -57,12 +57,16 @@ class UserController extends Controller
             $validated['can_read'] = true;
             $validated['can_update'] = true;
             $validated['can_delete'] = true;
+            $validated['can_stock_in'] = true;
+            $validated['can_stock_out'] = true;
         } else {
             // For regular users, use submitted values or defaults
             $validated['can_create'] = $request->boolean('can_create', false);
             $validated['can_read'] = $request->boolean('can_read', true);
             $validated['can_update'] = $request->boolean('can_update', false);
             $validated['can_delete'] = $request->boolean('can_delete', false);
+            $validated['can_stock_in'] = $request->boolean('can_stock_in', false);
+            $validated['can_stock_out'] = $request->boolean('can_stock_out', false);
         }
 
         $validated['password'] = Hash::make($validated['password']);
@@ -109,12 +113,16 @@ class UserController extends Controller
             $user->can_read = true;
             $user->can_update = true;
             $user->can_delete = true;
+            $user->can_stock_in = true;
+            $user->can_stock_out = true;
         } else {
             // For regular users, use submitted values
             $user->can_create = $request->boolean('can_create', false);
             $user->can_read = $request->boolean('can_read', true);
             $user->can_update = $request->boolean('can_update', false);
             $user->can_delete = $request->boolean('can_delete', false);
+            $user->can_stock_in = $request->boolean('can_stock_in', false);
+            $user->can_stock_out = $request->boolean('can_stock_out', false);
         }
         
         // Only update password if provided

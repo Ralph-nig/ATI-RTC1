@@ -92,6 +92,10 @@
 
     <!-- Permissions Grid -->
     <div class="form-group full-width">
+        <div class="permissions-header">
+            <h4><i class="fas fa-shield-alt"></i> User Permissions</h4>
+            <p>Select the actions this user can perform</p>
+        </div>
         <div class="permissions-grid">
             <!-- Create Permission -->
             <div class="permission-card">
@@ -99,7 +103,7 @@
                        {{ old('can_create', $user->can_create ?? false) ? 'checked' : '' }}>
                 <label for="can_create">
                     <strong>Create</strong>
-                    <span>Add records</span>
+                    <span>Add new records</span>
                 </label>
             </div>
             
@@ -132,6 +136,26 @@
                     <span>Remove records</span>
                 </label>
             </div>
+            
+            <!-- Stock In Permission -->
+            <div class="permission-card">
+                <input type="checkbox" id="can_stock_in" name="can_stock_in" value="1" 
+                       {{ old('can_stock_in', $user->can_stock_in ?? false) ? 'checked' : '' }}>
+                <label for="can_stock_in">
+                    <strong>Stock In</strong>
+                    <span>Add inventory</span>
+                </label>
+            </div>
+            
+            <!-- Stock Out Permission -->
+            <div class="permission-card">
+                <input type="checkbox" id="can_stock_out" name="can_stock_out" value="1" 
+                       {{ old('can_stock_out', $user->can_stock_out ?? false) ? 'checked' : '' }}>
+                <label for="can_stock_out">
+                    <strong>Stock Out</strong>
+                    <span>Remove inventory</span>
+                </label>
+            </div>
         </div>
     </div>
 </div>
@@ -152,34 +176,60 @@
     grid-column: 1 / -1;
 }
 
+.permissions-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.permissions-header h4 {
+    color: #296218;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.permissions-header p {
+    color: #6c757d;
+    font-size: 13px;
+    margin: 0;
+}
+
 .permissions-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
 }
 
 .permission-card {
     background: white;
     border: 2px solid #e9ecef;
-    border-radius: 6px;
-    padding: 10px;
+    border-radius: 10px;
+    padding: 15px;
     transition: all 0.3s ease;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 60px;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+    cursor: pointer;
 }
 
 .permission-card:hover {
     border-color: #296218;
-    box-shadow: 0 2px 8px rgba(41, 98, 24, 0.1);
+    box-shadow: 0 4px 12px rgba(41, 98, 24, 0.1);
+    transform: translateY(-2px);
 }
 
 .permission-card input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
     flex-shrink: 0;
+    margin-top: 5px;
+    accent-color: #296218;
 }
 
 .permission-card label {
@@ -188,21 +238,62 @@
     cursor: pointer;
     width: 100%;
     margin: 0;
-    gap: 2px;
+    gap: 8px;
+}
+
+.permission-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.permission-icon.create {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.permission-icon.read {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.permission-icon.update {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.permission-icon.delete {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.permission-icon.stock-in {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.permission-icon.stock-out {
+    background: #fce4ec;
+    color: #c2185b;
 }
 
 .permission-card label strong {
     color: #333;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
 }
 
 .permission-card label span {
     color: #6c757d;
-    font-size: 11px;
+    font-size: 12px;
 }
 
-.permission-card input[type="checkbox"]:checked + label strong {
+.permission-card input[type="checkbox"]:checked ~ label strong {
     color: #296218;
 }
 
@@ -227,27 +318,29 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.getElementById('role');
-    const permissionsSection = document.querySelector('.permissions-grid');
+    const permissionsSection = document.querySelector('.permissions-grid').parentElement;
     const permissionCheckboxes = [
         document.getElementById('can_create'),
         document.getElementById('can_read'),
         document.getElementById('can_update'),
-        document.getElementById('can_delete')
+        document.getElementById('can_delete'),
+        document.getElementById('can_stock_in'),
+        document.getElementById('can_stock_out')
     ];
     
     function updatePermissionsVisibility() {
         const selectedRole = roleSelect.value;
         
         if (selectedRole === 'admin') {
-            permissionsSection.parentElement.style.display = 'none';
+            permissionsSection.style.display = 'none';
             // Ensure all permissions are checked for admin
             permissionCheckboxes.forEach(cb => {
                 if (cb) cb.checked = true;
             });
         } else if (selectedRole === 'user') {
-            permissionsSection.parentElement.style.display = 'block';
+            permissionsSection.style.display = 'block';
         } else {
-            permissionsSection.parentElement.style.display = 'none';
+            permissionsSection.style.display = 'none';
         }
     }
     

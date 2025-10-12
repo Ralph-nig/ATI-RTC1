@@ -37,14 +37,26 @@
                         </div>
                         
                         <div class="action-buttons">
-                            <a href="{{ route('client.stockcard.stock-in') }}" class="btn btn-success">
-                                <i class="fas fa-arrow-down"></i>
-                                Stock In
-                            </a>
-                            <a href="{{ route('client.stockcard.stock-out') }}" class="btn btn-danger">
-                                <i class="fas fa-arrow-up"></i>
-                                Stock Out
-                            </a>
+                            @if(auth()->user()->hasPermission('stock_in'))
+                                <a href="{{ route('client.stockcard.stock-in') }}" class="btn btn-success">
+                                    <i class="fas fa-arrow-down"></i>
+                                    Stock In
+                                </a>
+                            @endif
+                            
+                            @if(auth()->user()->hasPermission('stock_out'))
+                                <a href="{{ route('client.stockcard.stock-out') }}" class="btn btn-danger">
+                                    <i class="fas fa-arrow-up"></i>
+                                    Stock Out
+                                </a>
+                            @endif
+                            
+                            @if(!auth()->user()->hasPermission('stock_in') && !auth()->user()->hasPermission('stock_out'))
+                                <div class="no-permission-message">
+                                    <i class="fas fa-lock"></i>
+                                    <span>View Only Access</span>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -142,10 +154,12 @@
                             <i class="fas fa-clipboard-list"></i>
                             <h3>No stock items found</h3>
                             <p>No supplies available in the system.</p>
-                            <a href="{{ route('supplies.create') }}" class="btn btn-success">
-                                <i class="fas fa-plus"></i>
-                                Add Supplies First
-                            </a>
+                            @if(auth()->user()->hasPermission('create'))
+                                <a href="{{ route('supplies.create') }}" class="btn btn-success">
+                                    <i class="fas fa-plus"></i>
+                                    Add Supplies First
+                                </a>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -204,5 +218,24 @@
             });
         });
     </script>
+
+    <style>
+        .no-permission-message {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .no-permission-message i {
+            font-size: 16px;
+        }
+    </style>
 </body>
 </html>

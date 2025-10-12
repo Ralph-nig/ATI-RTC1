@@ -25,6 +25,8 @@ class User extends Authenticatable
         'can_read',
         'can_update',
         'can_delete',
+        'can_stock_in',
+        'can_stock_out',
         'avatar',
     ];
 
@@ -59,6 +61,8 @@ class User extends Authenticatable
             'can_read' => 'boolean',
             'can_update' => 'boolean',
             'can_delete' => 'boolean',
+            'can_stock_in' => 'boolean',
+            'can_stock_out' => 'boolean',
         ];
     }
 
@@ -106,6 +110,8 @@ class User extends Authenticatable
             'read' => $this->can_read,
             'update' => $this->can_update,
             'delete' => $this->can_delete,
+            'stock_in' => $this->can_stock_in,
+            'stock_out' => $this->can_stock_out,
             default => false,
         };
     }

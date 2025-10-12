@@ -35,7 +35,7 @@
                     <i class="fas fa-barcode"></i>
                     <input type="text" id="property_number" name="property_number" class="form-input" 
                            value="{{ old('property_number', $isEdit ? $equipment->property_number : '') }}" 
-                           required placeholder="e.g., EQP-2025-001 or 2025-ABC-123">
+                           required placeholder="Enter property number">
                 </div>
                 @error('property_number')
                     <div class="error-message">{{ $message }}</div>
@@ -56,6 +56,24 @@
                 @enderror
             </div>
             
+            <!-- Classification with Autocomplete -->
+            <div class="form-group">
+                <label for="classification" class="form-label">Classification</label>
+                <div class="input-group" style="position: relative;">
+                    <i class="fas fa-layer-group"></i>
+                    <input type="text" id="classification" name="classification" class="form-input" 
+                           value="{{ old('classification', $isEdit ? $equipment->classification : '') }}" 
+                           placeholder="Enter Classification"
+                           autocomplete="off">
+                    <div id="classification-dropdown" class="autocomplete-dropdown" style="display: none;">
+                        <!-- Dropdown items will be populated dynamically -->
+                    </div>
+                </div>
+                @error('classification')
+                    <div class="error-message">{{ $message }}</div>
+                @enderror
+            </div>
+            
             <!-- Unit of Measurement -->
             <div class="form-group">
                 <label for="unit_of_measurement" class="form-label required">Unit of Measurement</label>
@@ -63,7 +81,7 @@
                     <i class="fas fa-ruler"></i>
                     <input type="text" id="unit_of_measurement" name="unit_of_measurement" class="form-input" 
                            value="{{ old('unit_of_measurement', $isEdit ? $equipment->unit_of_measurement : '') }}" 
-                           required placeholder="e.g., pcs, unit, set, lot, pair">
+                           required placeholder="Enter unit of measurement">
                 </div>
                 @error('unit_of_measurement')
                     <div class="error-message">{{ $message }}</div>
@@ -169,6 +187,52 @@
     </form>
 </div>
 
+<style>
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 2px;
+}
+
+.autocomplete-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.autocomplete-item:hover {
+    background: #f8f9fa;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item i {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.autocomplete-empty {
+    padding: 10px 15px;
+    color: #6c757d;
+    font-size: 14px;
+    text-align: center;
+}
+</style>
+
 <script>
     // Set today's date as default for acquisition date (only for create form)
     document.addEventListener('DOMContentLoaded', function() {
@@ -178,5 +242,71 @@
             acquisitionDateInput.value = new Date().toISOString().split('T')[0];
         }
         @endif
+
+        // Classification autocomplete functionality
+        const classificationInput = document.getElementById('classification');
+        const dropdown = document.getElementById('classification-dropdown');
+        let classifications = [];
+
+        // Fetch existing classifications
+        fetch('/client/equipment/api/classifications')
+            .then(response => response.json())
+            .then(data => {
+                classifications = data;
+            })
+            .catch(error => console.error('Error fetching classifications:', error));
+
+        // Show dropdown on focus
+        classificationInput.addEventListener('focus', function() {
+            if (classifications.length > 0) {
+                showDropdown(classifications);
+            }
+        });
+
+        // Filter on input
+        classificationInput.addEventListener('input', function() {
+            const value = this.value.toLowerCase().trim();
+            
+            if (value === '') {
+                showDropdown(classifications);
+            } else {
+                const filtered = classifications.filter(item => 
+                    item.toLowerCase().includes(value)
+                );
+                showDropdown(filtered);
+            }
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!classificationInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        function showDropdown(items) {
+            if (items.length === 0) {
+                dropdown.innerHTML = '<div class="autocomplete-empty">No classifications found. Type to create a new one.</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            dropdown.innerHTML = items.map(item => `
+                <div class="autocomplete-item" data-value="${item}">
+                    <i class="fas fa-layer-group"></i>
+                    ${item}
+                </div>
+            `).join('');
+
+            dropdown.style.display = 'block';
+
+            // Add click handlers to items
+            dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    classificationInput.value = this.dataset.value;
+                    dropdown.style.display = 'none';
+                });
+            });
+        }
     });
 </script>

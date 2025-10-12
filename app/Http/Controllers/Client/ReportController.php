@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Equipment;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
@@ -40,7 +41,55 @@ class ReportController extends Controller
     // RPC PPE Report
     public function rpcPpe(Request $request)
     {
-        return view('client.report.rpc-ppe.index');
+        // Get all equipment, ordered by classification and article
+        $equipmentQuery = Equipment::orderBy('classification')
+            ->orderBy('article')
+            ->orderBy('property_number');
+
+        // Apply filters if provided
+        if ($request->filled('classification')) {
+            $equipmentQuery->where('classification', $request->classification);
+        }
+
+        if ($request->filled('condition')) {
+            $equipmentQuery->where('condition', $request->condition);
+        }
+
+        if ($request->filled('date_from')) {
+            $equipmentQuery->whereDate('acquisition_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $equipmentQuery->whereDate('acquisition_date', '<=', $request->date_to);
+        }
+
+        $allEquipment = $equipmentQuery->get();
+
+        // Group equipment by classification
+        $groupedEquipment = $allEquipment->groupBy('classification');
+
+        // Get all unique classifications for filter dropdown
+        $classifications = Equipment::whereNotNull('classification')
+            ->where('classification', '!=', '')
+            ->distinct()
+            ->pluck('classification')
+            ->sort()
+            ->values();
+
+        // Calculate totals
+        $totalValue = $allEquipment->sum('unit_value');
+        $totalItems = $allEquipment->count();
+        $serviceableCount = $allEquipment->where('condition', 'Serviceable')->count();
+        $unserviceableCount = $allEquipment->where('condition', 'Unserviceable')->count();
+
+        return view('client.report.rpc-ppe.index', compact(
+            'groupedEquipment',
+            'classifications',
+            'totalValue',
+            'totalItems',
+            'serviceableCount',
+            'unserviceableCount'
+        ));
     }
 
     public function create()
