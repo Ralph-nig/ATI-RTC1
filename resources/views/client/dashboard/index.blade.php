@@ -4,6 +4,7 @@
     <h2>Welcome to the Dashboard</h2>
 </div>
 
+@if(auth()->user()->isAdmin())
 <div class="stats-container">
     <div class="stat-card green" onclick="navigateTo('/client/supplies')">
         <div class="stat-left">
@@ -48,6 +49,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <div class="main-content-area">
     <div class="recently-added-section">

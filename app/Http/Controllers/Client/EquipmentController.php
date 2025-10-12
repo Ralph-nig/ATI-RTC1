@@ -67,6 +67,7 @@ class EquipmentController extends Controller
         $validated = $request->validate([
             'property_number' => 'required|string|max:255|unique:equipment,property_number',
             'article' => 'required|string|max:255',
+            'classification' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'unit_of_measurement' => 'required|string|max:50',
             'unit_value' => 'required|numeric|min:0',
@@ -130,6 +131,7 @@ class EquipmentController extends Controller
         $validated = $request->validate([
             'property_number' => 'required|string|max:255|unique:equipment,property_number,' . $id,
             'article' => 'required|string|max:255',
+            'classification' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'unit_of_measurement' => 'required|string|max:50',
             'unit_value' => 'required|numeric|min:0',
@@ -165,6 +167,20 @@ class EquipmentController extends Controller
     }
 
     /**
+     * Get unique classifications for autocomplete
+     */
+    public function getClassifications()
+    {
+        $classifications = Equipment::whereNotNull('classification')
+            ->distinct()
+            ->pluck('classification')
+            ->filter()
+            ->values();
+
+        return response()->json($classifications);
+    }
+
+    /**
      * Export equipment to Excel/CSV
      */
     public function export()
@@ -175,9 +191,6 @@ class EquipmentController extends Controller
                 ->with('error', 'You do not have permission to export equipment.');
         }
 
-        // Implementation depends on your export library (e.g., Laravel Excel)
-        // For now, returning a basic CSV export
-        
         $equipment = Equipment::all();
         
         $filename = "equipment_" . date('Y-m-d_His') . ".csv";
@@ -193,6 +206,7 @@ class EquipmentController extends Controller
             // Add headers
             fputcsv($file, [
                 'Article',
+                'Classification',
                 'Description',
                 'Property Number',
                 'Unit of Measurement',
@@ -208,6 +222,7 @@ class EquipmentController extends Controller
             foreach ($equipment as $item) {
                 fputcsv($file, [
                     $item->article,
+                    $item->classification,
                     $item->description,
                     $item->property_number,
                     $item->unit_of_measurement,

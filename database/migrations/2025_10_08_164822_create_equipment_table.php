@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('equipment', function (Blueprint $table) {
             $table->id();
             $table->string('article');
+            $table->string('classification')->nullable(); // Added classification field
             $table->text('description')->nullable();
             $table->string('property_number')->unique(); // Format: YYYY-MM-DD-ID
             $table->string('unit_of_measurement');
@@ -21,7 +22,7 @@ return new class extends Migration
             $table->enum('condition', ['Serviceable', 'Unserviceable'])->default('Serviceable');
             $table->date('acquisition_date')->nullable();
             $table->string('location')->nullable();
-            $table->string('responsible_person')->nullable(); // New field
+            $table->string('responsible_person')->nullable();
             $table->text('remarks')->nullable();
             $table->timestamps();
             $table->softDeletes();

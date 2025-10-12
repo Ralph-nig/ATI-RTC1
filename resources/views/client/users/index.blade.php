@@ -127,19 +127,19 @@
                                                 <div class="permissions-display" style="justify-content: center;">
                                                     <span class="perm-badge {{ $userItem->can_create ? 'perm-create' : 'perm-disabled' }}" 
                                                           title="{{ $userItem->can_create ? 'Can Create' : 'Cannot Create' }}">
-                                                        <i class="fas fa-plus-circle"></i>C
+                                                        C
                                                     </span>
                                                     <span class="perm-badge {{ $userItem->can_read ? 'perm-read' : 'perm-disabled' }}" 
                                                           title="{{ $userItem->can_read ? 'Can Read' : 'Cannot Read' }}">
-                                                        <i class="fas fa-eye"></i>R
+                                                        R
                                                     </span>
                                                     <span class="perm-badge {{ $userItem->can_update ? 'perm-update' : 'perm-disabled' }}" 
                                                           title="{{ $userItem->can_update ? 'Can Update' : 'Cannot Update' }}">
-                                                        <i class="fas fa-edit"></i>U
+                                                        U
                                                     </span>
                                                     <span class="perm-badge {{ $userItem->can_delete ? 'perm-delete' : 'perm-disabled' }}" 
                                                           title="{{ $userItem->can_delete ? 'Can Delete' : 'Cannot Delete' }}">
-                                                        <i class="fas fa-trash-alt"></i>D
+                                                        D
                                                     </span>
                                                 </div>
                                             @endif

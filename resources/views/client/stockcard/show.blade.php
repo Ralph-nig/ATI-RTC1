@@ -88,16 +88,20 @@
                                         <td>{{ $movement->created_at->format('F d, Y') }}</td>
                                         <td>{{ $movement->reference }}</td>
                                         @if($movement->type === 'in')
-                                            <!-- Stock In: Fill Receipt column -->
-                                            <td style="text-align: center;">{{ $movement->quantity }}</td>
+                                            <!-- Stock In: Fill Receipt column with + sign -->
+                                            <td style="text-align: center;" class="stock-in-cell">
+                                                <span class="quantity-badge positive">+{{ $movement->quantity }}</span>
+                                            </td>
                                             <!-- Issue columns empty -->
                                             <td style="text-align: center;"></td>
                                             <td>{{ $movement->notes ?: 'Balance as of ' . $movement->created_at->format('F Y') }}</td>
                                         @else
                                             <!-- Stock Out: Receipt column empty -->
                                             <td style="text-align: center;"></td>
-                                            <!-- Fill Issue columns -->
-                                            <td style="text-align: center;">{{ $movement->quantity }}</td>
+                                            <!-- Fill Issue columns with - sign -->
+                                            <td style="text-align: center;" class="stock-out-cell">
+                                                <span class="quantity-badge negative">-{{ $movement->quantity }}</span>
+                                            </td>
                                             <td>{{ $movement->notes ?: 'Issued' }}</td>
                                         @endif
                                         <!-- Balance column -->
