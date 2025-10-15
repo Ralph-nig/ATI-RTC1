@@ -93,8 +93,7 @@
     <!-- Permissions Grid -->
     <div class="form-group full-width">
         <div class="permissions-header">
-            <h4><i class="fas fa-shield-alt"></i> User Permissions</h4>
-            <p>Select the actions this user can perform</p>
+            <h4> User Permissions</h4>
         </div>
         <div class="permissions-grid">
             <!-- Create Permission -->
