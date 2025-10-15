@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Supplies;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,12 @@ class DashboardController extends Controller
                                 ->take(10)
                                 ->get();
         
+        // Get published announcements for non-admin users (last 6 announcements)
+        $publishedAnnouncements = Announcement::where('status', 'published')
+                                            ->orderBy('created_at', 'desc')
+                                            ->take(6)
+                                            ->get();
+        
         // Additional statistics for the dashboard
         $totalValue = Supplies::sum(DB::raw('quantity * unit_price'));
         $lowStockCount = Supplies::lowStock()->count();
@@ -44,13 +51,13 @@ class DashboardController extends Controller
                              ->pluck('category')
                              ->filter();
         
-        // Changed this line - using 'home' instead of 'layouts.home'
         return view('home', compact(
             'totalUsers',
             'totalItems',
             'itemsInStock', 
             'recentItems',
             'lowStockItems',
+            'publishedAnnouncements',
             'totalValue',
             'lowStockCount',
             'categoriesCount',

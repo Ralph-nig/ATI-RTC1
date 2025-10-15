@@ -17,12 +17,14 @@
             </a>
         </li>
 
+        @if(auth()->check() && auth()->user()->isAdmin())
         <li class="{{ Request::is('client/announcement*') ? 'hovered' : '' }}">
             <a href="{{ route('client.announcement.index') }}">
                 <span class="icon"><ion-icon name="megaphone-outline"></ion-icon></span>
                 <span class="title">Announcements</span>
             </a>
         </li>
+        @endif
         
         @if(auth()->check() && auth()->user()->isAdmin())
             <li class="{{ Request::is('client/users*') ? 'hovered' : '' }}">

@@ -82,11 +82,27 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::resource('propertycard', PropertyCardController::class)->names([
         'index' => 'client.propertycard.index'
     ]);
+    
+    // Announcement routes with bulk actions
+    Route::post('announcement/bulk-publish', [AnnouncementController::class, 'bulkPublish'])
+        ->name('client.announcement.bulk-publish');
+
+    Route::post('announcement/bulk-delete', [AnnouncementController::class, 'bulkDelete'])
+        ->name('client.announcement.bulk-delete');
+
+    Route::post('announcement/{id}/toggle-status', [AnnouncementController::class, 'toggleStatus'])
+        ->name('client.announcement.toggle-status');
 
     Route::resource('announcement', AnnouncementController::class)->names([
-        'index' => 'client.announcement.index'
+        'index' => 'client.announcement.index',
+        'create' => 'client.announcement.create',
+        'store' => 'client.announcement.store',
+        'show' => 'client.announcement.show',
+        'edit' => 'client.announcement.edit',
+        'update' => 'client.announcement.update',
+        'destroy' => 'client.announcement.destroy'
     ]);
-    
+
     // Help routes 
     Route::resource('help', HelpController::class)->names([
         'index' => 'client.help.index',
