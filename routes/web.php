@@ -64,7 +64,7 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::get('report/rpci', [ReportController::class, 'rpci'])->name('client.report.rpci');
     Route::get('report/ppes', [ReportController::class, 'ppes'])->name('client.report.ppes');
     Route::get('report/rpc-ppe', [ReportController::class, 'rpcPpe'])->name('client.report.rpc-ppe');
-
+        
     // Stock Card routes (Fixed naming convention)
     Route::prefix('stockcard')->name('client.stockcard.')->group(function () {
         Route::get('/', [StockCardController::class, 'index'])->name('index');
@@ -82,8 +82,13 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::resource('propertycard', PropertyCardController::class)->names([
         'index' => 'client.propertycard.index'
     ]);
-    
-    // Announcement routes with bulk actions
+        
+    Route::post('announcement/{id}/reserve', [AnnouncementController::class, 'reserveSupplies'])
+        ->name('client.announcement.reserve');
+
+    Route::post('announcement/{id}/stock-out', [AnnouncementController::class, 'stockOutSupplies'])
+        ->name('client.announcement.stock-out');
+
     Route::post('announcement/bulk-publish', [AnnouncementController::class, 'bulkPublish'])
         ->name('client.announcement.bulk-publish');
 
