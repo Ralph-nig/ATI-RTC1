@@ -17,6 +17,7 @@
         @include('layouts.core.sidebar')
         <div class="details">
             @include('layouts.core.header')
+            @include('layouts.core.footer')
             
             <div class="form-container">
                 <div class="form-header">

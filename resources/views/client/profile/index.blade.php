@@ -379,6 +379,7 @@
         
         <div class="details">
             @include('layouts.core.header')
+            @include('layouts.core.footer')
             
             <div class="profile-settings-container">
                 <div class="profile-header">

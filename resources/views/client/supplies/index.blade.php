@@ -62,7 +62,12 @@
                                     Add Items
                                 </a>
                             @endif
-                            
+                            @if(auth()->user()->hasPermission('read'))
+                                <a href="{{ route('deleted-supplies.index') }}" class="btn btn-warning">
+                                    <i class="fas fa-trash-restore"></i>
+                                    Deleted History
+                                </a>
+                            @endif
                             {{-- Only show Export if user can read --}}
                             @if(auth()->user()->hasPermission('read'))
                                 <a href="{{ route('supplies.export') }}" class="btn btn-primary">
@@ -295,5 +300,7 @@
             });
         });
     </script>
+
+    @include('layouts.core.footer')
 </body>
 </html>

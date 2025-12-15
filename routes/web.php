@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\SuppliesController;
+use App\Http\Controllers\Client\DeletedSupplyController;
+use App\Http\Controllers\Client\DeletedEquipmentController;
 use App\Http\Controllers\Client\EquipmentController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\ReportController;
@@ -12,6 +14,11 @@ use App\Http\Controllers\Client\AnnouncementController;
 use App\Http\Controllers\Client\HelpController;
 use App\Http\Controllers\Client\NotificationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Client\RsmiController;
+use App\Http\Controllers\Client\RpciController;
+use App\Http\Controllers\Client\RpcPpeController;
+use App\Http\Controllers\Client\PpesController;
+use App\Http\Controllers\Client\AboutController;
 use Illuminate\Support\Facades\Route;
 
 // Root route - redirect to dashboard after login
@@ -47,12 +54,26 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::resource('supplies', SuppliesController::class);
     Route::get('supplies-export', [SuppliesController::class, 'export'])->name('supplies.export');
 
+    Route::prefix('deleted-supplies')->name('deleted-supplies.')->group(function () {
+    Route::get('/', [DeletedSupplyController::class, 'index'])->name('index');
+    Route::get('/{id}', [DeletedSupplyController::class, 'show'])->name('show');
+    Route::post('/{id}/restore', [DeletedSupplyController::class, 'restore'])->name('restore');
+    Route::delete('/{id}/permanent', [DeletedSupplyController::class, 'permanentDelete'])->name('permanent-delete');
+    });
+
     // Equipment routes with export functionality
     Route::get('equipment/api/classifications', [EquipmentController::class, 'getClassifications'])->name('equipment.classifications');
     Route::resource('equipment', EquipmentController::class)->names([
         'index' => 'client.equipment.index'
     ]);
     Route::get('equipment-export', [EquipmentController::class, 'export'])->name('equipment.export');
+    Route::prefix('deleted-equipment')->name('deleted-equipment.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'show'])->name('show');
+    Route::post('/{id}/restore', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'restore'])->name('restore');
+    Route::delete('/{id}/permanent', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'permanentDelete'])->name('permanent-delete');
+    });
+
 
     // Report routes
     Route::resource('reports', ReportController::class)->names([
@@ -62,27 +83,34 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     // Individual report routes
     Route::get('report/rsmi', [ReportController::class, 'rsmi'])->name('client.report.rsmi');
     Route::get('report/rpci', [ReportController::class, 'rpci'])->name('client.report.rpci');
-    Route::get('report/ppes', [ReportController::class, 'ppes'])->name('client.report.ppes');
-    Route::get('report/rpc-ppe', [ReportController::class, 'rpcPpe'])->name('client.report.rpc-ppe');
-        
+    Route::get('report/rpc-ppe', [RpcPpeController::class, 'index'])->name('client.report.rpc-ppe');
+
     // Stock Card routes (Fixed naming convention)
     Route::prefix('stockcard')->name('client.stockcard.')->group(function () {
         Route::get('/', [StockCardController::class, 'index'])->name('index');
         Route::get('/show/{id}', [StockCardController::class, 'show'])->name('show');
-        
+        Route::get('/export/excel/{id}', [StockCardController::class, 'exportExcel'])->name('export.excel');
+        Route::get('/export/all/excel', [StockCardController::class, 'exportAllStockCards'])->name('export.all.excel');
+
         // Stock In routes
         Route::get('/stock-in', [StockCardController::class, 'stockIn'])->name('stock-in');
         Route::post('/stock-in', [StockCardController::class, 'processStockIn'])->name('stock-in.process');
-        
+
         // Stock Out routes
         Route::get('/stock-out', [StockCardController::class, 'stockOut'])->name('stock-out');
         Route::post('/stock-out', [StockCardController::class, 'processStockOut'])->name('stock-out.process');
+
+        // Audit Trail route 
+        Route::get('/audit-trail', [StockCardController::class, 'auditTrail'])->name('audit-trail');
     });
-    
+
     Route::resource('propertycard', PropertyCardController::class)->names([
-        'index' => 'client.propertycard.index'
+        'index' => 'client.propertycard.index',
+        'show' => 'client.propertycard.show'
     ]);
-        
+    Route::get('propertycard/export/excel/{id}', [PropertyCardController::class, 'exportExcel'])->name('client.propertycard.export.excel');
+    
+    
     Route::post('announcement/{id}/reserve', [AnnouncementController::class, 'reserveSupplies'])
         ->name('client.announcement.reserve');
 
@@ -107,7 +135,6 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
         'update' => 'client.announcement.update',
         'destroy' => 'client.announcement.destroy'
     ]);
-
     // Help routes 
     Route::resource('help', HelpController::class)->names([
         'index' => 'client.help.index',
@@ -126,9 +153,35 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
     Route::get('/notifications/recent', [NotificationController::class, 'getRecent']);
 
+    // About routes
+    Route::get('/about', [AboutController::class, 'index'])->name('client.about.index');
+
     // Alternative route names for backward compatibility
     Route::get('inventory', [SuppliesController::class, 'index'])->name('client.inventory');
     Route::get('inventory/{supply}', [SuppliesController::class, 'show'])->name('client.inventory.show');
+});
+
+// Route para sa RSMI report page
+Route::prefix('client/report')->group(function () {
+    Route::get('/rsmi', [RsmiController::class, 'index'])->name('client.report.rsmi');
+    Route::get('/rsmi/export/pdf', [RsmiController::class, 'exportPDF'])->name('client.report.rsmi.export.pdf');
+    Route::get('/rsmi/export/excel', [RsmiController::class, 'exportExcel'])->name('client.report.rsmi.export.excel');
+
+    // RPCI report routes
+    Route::get('/rpci', [RpciController::class, 'index'])->name('client.report.rpci');
+    // Use ReportController export handlers for RPCl quick-export endpoints
+    Route::get('/rpci/export/pdf', [App\Http\Controllers\Client\ReportController::class, 'exportRpciPdf'])->name('client.report.rpci.export.pdf');
+    Route::get('/rpci/export/excel', [App\Http\Controllers\Client\ReportController::class, 'exportRpciExcel'])->name('client.report.rpci.export.excel');
+
+    // PPES report routes
+    Route::get('/ppes', [PpesController::class, 'index'])->name('client.report.ppes');
+    Route::get('/ppes/export/pdf', [PpesController::class, 'exportPDF'])->name('client.report.ppes.export.pdf');
+    Route::get('/ppes/export/excel', [PpesController::class, 'exportExcel'])->name('client.report.ppes.export.excel');
+
+    // RPC-PPE report routes
+    Route::get('/rpc-ppe', [RpcPpeController::class, 'index'])->name('client.report.rpc-ppe');
+    Route::get('/rpc-ppe/export/pdf', [RpcPpeController::class, 'exportPDF'])->name('client.report.rpc-ppe.export.pdf');
+    Route::get('/rpc-ppe/export/excel', [RpcPpeController::class, 'exportExcel'])->name('client.report.rpc-ppe.export.excel');
 });
 
 // Fallback route for authenticated users

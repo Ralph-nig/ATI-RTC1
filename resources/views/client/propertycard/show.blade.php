@@ -17,14 +17,24 @@
         @include('layouts.core.sidebar')
         <div class="details">
             @include('layouts.core.header')
+            @include('layouts.core.footer')
             
             <div class="supplies-container">
                 <!-- Header Section -->
                 <div class="form-header">
-                    <a href="{{ route('client.propertycard.index') }}" class="back-button">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Property Card
-                    </a>
+                    <div class="header-top">
+                        <a href="{{ route('client.propertycard.index') }}" class="back-button">
+                            <i class="fas fa-arrow-left"></i>
+                            Back to Property Card
+                        </a>
+
+                        <div class="action-buttons">
+                            <a href="{{ route('client.propertycard.export.excel', $equipment->id) }}" class="btn btn-primary">
+                                <i class="fas fa-download"></i>
+                                Export
+                            </a>
+                        </div>
+                    </div>
 
                     <div class="property-summary">
                         <div class="summary-yellow">
@@ -38,6 +48,7 @@
                                 <strong>Property Number:</strong> {{ $equipment->property_number }}
                             </div>
                         </div>
+
                     </div>
                 </div>
                 
@@ -286,6 +297,13 @@
             }
         }
 
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         @media (max-width: 768px) {
             .header-row,
             .summary-row {
@@ -304,6 +322,12 @@
             .property-card-table th,
             .property-card-table td {
                 padding: 5px 3px;
+            }
+
+            .header-top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
     </style>
