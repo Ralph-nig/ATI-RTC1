@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeletedSupply;
 use App\Models\Supplies;
 use Illuminate\Http\Request;
 
@@ -110,7 +111,7 @@ class SuppliesController extends Controller
             abort(403, 'You do not have permission to view supply details.');
         }
 
-        return view('client.supplies.show', compact('supply'));
+        return view('client.supplies.view', compact('supply'));
     }
 
     /**
@@ -135,9 +136,7 @@ class SuppliesController extends Controller
     public function update(Request $request, Supplies $supply)
     {
         // Check update permission
-        if (!auth()->user()->hasPermission('update')) {
-            abort(403, 'You do not have permission to update supplies.');
-        }
+        
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -160,65 +159,35 @@ class SuppliesController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Supplies $supply)
-    {
-        // Check delete permission
-        if (!auth()->user()->hasPermission('delete')) {
-            return response()->json(['error' => 'You do not have permission to delete supplies.'], 403);
-        }
-
-        $supply->delete();
-
-        return redirect()->route('supplies.index')->with('success', 'Supply item deleted successfully!');
+public function destroy(Supplies $supply)
+{
+    // Check delete permission
+    if (!auth()->user()->hasPermission('delete')) {
+        return response()->json(['error' => 'You do not have permission to delete supplies.'], 403);
     }
 
-    /**
-     * Export supplies data
-     */
-    public function export()
-    {
-        // Check read permission for export
-        if (!auth()->user()->hasPermission('read')) {
-            abort(403, 'You do not have permission to export supplies.');
-        }
+    // Save to deleted_supplies table before deleting
+    DeletedSupply::create([
+        'user_id' => auth()->id(),
+        'supply_id' => $supply->id,
+        'name' => $supply->name,
+        'description' => $supply->description,
+        'quantity' => $supply->quantity,
+        'unit_price' => $supply->unit_price,
+        'unit' => $supply->unit,
+        'category' => $supply->category,
+        'supplier' => $supply->supplier,
+        'purchase_date' => $supply->purchase_date,
+        'minimum_stock' => $supply->minimum_stock,
+        'notes' => $supply->notes,
+        'total_value' => $supply->quantity * $supply->unit_price,
+        'reason' => request('reason'),
+        'ip_address' => request()->ip(),
+        'user_agent' => request()->userAgent()
+    ]);
 
-        $supplies = Supplies::all();
-        
-        $filename = 'supplies_' . date('Y-m-d') . '.csv';
-        
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"$filename\"",
-        ];
+    $supply->delete();
 
-        return response()->stream(function() use ($supplies) {
-            $handle = fopen('php://output', 'w');
-            
-            // CSV headers
-            fputcsv($handle, [
-                'ID', 'Name', 'Description', 'Quantity', 'Unit Price', 'Unit', 
-                'Category', 'Supplier', 'Purchase Date', 'Minimum Stock', 'Total Value', 'Notes'
-            ]);
-            
-            // CSV data
-            foreach ($supplies as $supply) {
-                fputcsv($handle, [
-                    $supply->id,
-                    $supply->name,
-                    $supply->description,
-                    $supply->quantity,
-                    $supply->unit_price,
-                    $supply->unit,
-                    $supply->category,
-                    $supply->supplier,
-                    $supply->purchase_date?->format('Y-m-d'),
-                    $supply->minimum_stock,
-                    $supply->total_value,
-                    $supply->notes
-                ]);
-            }
-            
-            fclose($handle);
-        }, 200, $headers);
-    }
+    return redirect()->route('supplies.index')->with('success', 'Supply item deleted successfully!');
+}
 }

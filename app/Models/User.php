@@ -138,4 +138,36 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notification::class)->where('is_read', false);
     }
+
+    /**
+     * Get audit trails performed by this user
+     */
+    public function auditTrails()
+    {
+        return $this->hasMany(AuditTrail::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get recent audit trails for this user
+     */
+    public function recentAuditTrails(int $limit = 10)
+    {
+        return $this->auditTrails()->limit($limit)->get();
+    }
+
+    /**
+     * Get stock movements performed by this user (if you have a StockMovement model)
+     */
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    /**
+     * Get recent stock movements by this user
+     */
+    public function recentStockMovements(int $limit = 10)
+    {
+        return $this->stockMovements()->orderBy('created_at', 'desc')->limit($limit)->get();
+    }
 }

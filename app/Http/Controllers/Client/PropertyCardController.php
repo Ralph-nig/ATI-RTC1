@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Equipment;
+use App\Exports\PropertyCardExport;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PropertyCardController extends Controller
 {
@@ -43,5 +45,14 @@ class PropertyCardController extends Controller
     {
         $equipment = Equipment::findOrFail($id);
         return view('client.propertycard.show', compact('equipment'));
+    }
+
+    /**
+     * Export property card to Excel
+     */
+    public function exportExcel($id)
+    {
+        $equipment = Equipment::findOrFail($id);
+        return Excel::download(new PropertyCardExport($equipment), 'property_card_' . $equipment->property_number . '.xlsx');
     }
 }

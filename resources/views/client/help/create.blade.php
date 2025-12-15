@@ -10,6 +10,7 @@
     @include('layouts.core.sidebar')
     <div class="details">
         @include('layouts.core.header')
+        @include('layouts.core.footer')
         
         @include('client.help.form', [
             'isEdit' => false,

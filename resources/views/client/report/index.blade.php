@@ -8,24 +8,25 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/supplies.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/announcement.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
-    <style>
-        
+    <style>       
         .reports-content {
             flex: 1;
-            background: #296218;
+            background: #d4edda;
             padding: 30px;
             display: flex;
             flex-direction: column;
             gap: 20px;
             border-radius: 15px;
-            min-height: calc(80vh - 80px); /* Adjust based on your header height */
+            min-height: 100vh; /* Extend green background to full viewport height */
         }
 
         .reports-title {
-            color: white;
+            color: #2c3e50;
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 20px;
@@ -33,9 +34,9 @@
         }
 
         .reports-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
             max-width: 1135px;
         }
 
@@ -43,17 +44,38 @@
             background-color: rgba(255, 255, 255, 0.95);
             border: none;
             border-radius: 15px;
-            padding: 20px 25px;
+            padding: 30px 25px;
             font-size: 16px;
             font-weight: 600;
             color: #2c3e50;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: left;
+            text-align: center;
             border: 2px solid transparent;
             text-decoration: none;
-            display: block;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+        }
+
+        .report-button .report-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #296218;
+        }
+
+        .report-button .report-title {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .report-button .report-subtitle {
+            font-size: 12px;
+            font-weight: 400;
+            color: #7f8c8d;
         }
 
         .report-button:hover {
@@ -73,14 +95,33 @@
             .reports-content {
                 padding: 20px;
             }
-            
+
             .reports-title {
                 font-size: 24px;
             }
-            
+
+            .reports-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
             .report-button {
-                padding: 15px 20px;
-                font-size: 14px;
+                padding: 20px 15px;
+                min-height: 100px;
+            }
+
+            .report-button .report-icon {
+                font-size: 28px;
+                margin-bottom: 8px;
+            }
+
+            .report-button .report-title {
+                font-size: 16px;
+                margin-bottom: 3px;
+            }
+
+            .report-button .report-subtitle {
+                font-size: 11px;
             }
         }
     </style>
@@ -92,27 +133,41 @@
             @include('layouts.core.header')
             
             <!-- Reports Content -->
-            <div class="reports-content">
-                <h1 class="reports-title">Reports</h1>
-                
+            <div class="supplies-container">
+                <div class="supplies-header">
+                    <h1 class="supplies-title">
+                        <i class="fas fa-chart-line"></i>
+                        Reports
+                    </h1>
+                </div>
+
                 <div class="reports-grid">
                     <a href="{{ route('client.report.rpci') }}" class="report-button">
-                        RPCI (Report on the Physical Count of Inventory)
+                        <i class="fas fa-clipboard-list report-icon"></i>
+                        <div class="report-title">RPCI</div>
+                        <div class="report-subtitle">Report on the Physical Count of Inventory</div>
                     </a>
-                    
+
                     <a href="{{ route('client.report.rsmi') }}" class="report-button">
-                        RSMI (Report of Supplies and Materials Issued)
+                        <i class="fas fa-boxes report-icon"></i>
+                        <div class="report-title">RSMI</div>
+                        <div class="report-subtitle">Report of Supplies and Materials Issued</div>
                     </a>
-                    
+
                     <a href="{{ route('client.report.ppes') }}" class="report-button">
-                        PPES (Property Plant and Equipment)
+                        <i class="fas fa-tools report-icon"></i>
+                        <div class="report-title">PPES</div>
+                        <div class="report-subtitle">Property Plant and Equipment</div>
                     </a>
-                    
+
                     <a href="{{ route('client.report.rpc-ppe') }}" class="report-button">
-                        RPC PPE (Report on the property plant and Equipment)
+                        <i class="fas fa-building report-icon"></i>
+                        <div class="report-title">RPC PPE</div>
+                        <div class="report-subtitle">Report on the Property Plant and Equipment</div>
                     </a>
                 </div>
             </div>
+        </div>
         </div>   
     </div>
 
@@ -125,5 +180,7 @@
             });
         });
     </script>
+
+    @include('layouts.core.footer')
 </body>
 </html>
