@@ -49,6 +49,21 @@
             color: #333;
             text-align: left;
         }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .disposal-highlight {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
         .btn-group {
             display: flex;
             gap: 10px;
@@ -94,9 +109,35 @@
                     <tr><th>Description</th><td>{{ $equipment->description ?? 'N/A' }}</td></tr>
                     <tr><th>Unit of Measurement</th><td>{{ $equipment->unit_of_measurement }}</td></tr>
                     <tr><th>Unit Value</th><td>₱{{ number_format($equipment->unit_value, 2) }}</td></tr>
-                    <tr><th>Condition</th><td>{{ $equipment->condition }}</td></tr>
+                    <tr>
+                        <th>Condition</th>
+                        <td>
+                            @if($equipment->condition === 'Serviceable')
+                                <span class="status-badge" style="background: #d4edda; color: #155724; border: 1px solid #a3d9a5;">
+                                    <i class="fas fa-check-circle"></i> Serviceable
+                                </span>
+                            @else
+                                <span class="status-badge" style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                                    <i class="fas fa-times-circle"></i> Unserviceable
+                                </span>
+                            @endif
+                        </td>
+                    </tr>
+                    
+                    @if($equipment->condition === 'Unserviceable' && $equipment->disposal_method)
+                        <tr>
+                            <th>Disposal Method</th>
+                            <td>
+                                <span class="disposal-highlight">
+                                    <i class="fas fa-recycle"></i> {{ $equipment->formatted_disposal_method }}
+                                </span>
+                            </td>
+                        </tr>
+                    @endif
+                    
                     <tr><th>Acquisition Date</th>
-                        <td>{{ $equipment->acquisition_date ? \Carbon\Carbon::parse($equipment->acquisition_date)->format('F d, Y') : 'N/A' }}</td></tr>
+                        <td>{{ $equipment->acquisition_date ? \Carbon\Carbon::parse($equipment->acquisition_date)->format('F d, Y') : 'N/A' }}</td>
+                    </tr>
                     <tr><th>Location</th><td>{{ $equipment->location ?? 'N/A' }}</td></tr>
                     <tr><th>Responsible Person</th><td>{{ $equipment->responsible_person ?? 'N/A' }}</td></tr>
                     <tr><th>Remarks</th><td>{{ $equipment->remarks ?? 'None' }}</td></tr>
@@ -106,13 +147,14 @@
                     <a href="{{ route('client.equipment.index') }}" class="btn btn-back">
                         <ion-icon name="arrow-back-outline"></ion-icon> Back
                     </a>
-                    <a href="{{ route('equipment.edit', $equipment->id) }}" class="btn btn-edit">
-                        <ion-icon name="create-outline"></ion-icon> Edit
-                    </a>
+                    @if(auth()->user()->hasPermission('update'))
+                        <a href="{{ route('equipment.edit', $equipment->id) }}" class="btn btn-edit">
+                            <ion-icon name="create-outline"></ion-icon> Edit
+                        </a>
+                    @endif
                 </div>
                 @else
                     <p>No equipment data found.</p>
-                
                 @endif
             </div>
         </div>

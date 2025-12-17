@@ -102,7 +102,7 @@
                 @enderror
             </div>
             
-            <!-- Remarks (previously Condition) -->
+            <!-- Remarks (Condition) -->
             <div class="form-group">
                 <label for="condition" class="form-label required">Remarks</label>
                 <select id="condition" name="condition" class="form-select" required>
@@ -118,6 +118,38 @@
                     </option>
                 </select>
                 @error('condition')
+                    <div class="error-message">{{ $message }}</div>
+                @enderror
+            </div>
+            
+            <!-- Disposal Method (Conditional Field) -->
+            <div class="form-group" id="disposal-method-group" style="display: none;">
+                <label for="disposal_method" class="form-label required">Disposal Method</label>
+                <select id="disposal_method" name="disposal_method" class="form-select">
+                    <option value="">Select Disposal Method</option>
+                    @php
+                        $currentDisposalMethod = old('disposal_method', $isEdit ? ($equipment->disposal_method ?? '') : '');
+                    @endphp
+                    <option value="Sale" {{ $currentDisposalMethod == 'Sale' ? 'selected' : '' }}>Sale</option>
+                    <option value="Transfer" {{ $currentDisposalMethod == 'Transfer' ? 'selected' : '' }}>Transfer</option>
+                    <option value="Destruction" {{ $currentDisposalMethod == 'Destruction' ? 'selected' : '' }}>Destruction</option>
+                    <option value="Others" {{ $currentDisposalMethod == 'Others' ? 'selected' : '' }}>Others (Specify)</option>
+                </select>
+                @error('disposal_method')
+                    <div class="error-message">{{ $message }}</div>
+                @enderror
+            </div>
+            
+            <!-- Disposal Details (Conditional Field for "Others") -->
+            <div class="form-group" id="disposal-details-group" style="display: none;">
+                <label for="disposal_details" class="form-label required">Specify Disposal Details</label>
+                <div class="input-group">
+                    <i class="fas fa-info-circle"></i>
+                    <input type="text" id="disposal_details" name="disposal_details" class="form-input" 
+                           value="{{ old('disposal_details', $isEdit ? ($equipment->disposal_details ?? '') : '') }}" 
+                           placeholder="Please specify the disposal method">
+                </div>
+                @error('disposal_details')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
             </div>
@@ -231,17 +263,79 @@
     font-size: 14px;
     text-align: center;
 }
+
+.form-group {
+    transition: all 0.3s ease;
+}
+
+#disposal-method-group,
+#disposal-details-group {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 
 <script>
-    // Set today's date as default for acquisition date (only for create form)
     document.addEventListener('DOMContentLoaded', function() {
+        const conditionSelect = document.getElementById('condition');
+        const disposalMethodGroup = document.getElementById('disposal-method-group');
+        const disposalMethodSelect = document.getElementById('disposal_method');
+        const disposalDetailsGroup = document.getElementById('disposal-details-group');
+        const disposalDetailsInput = document.getElementById('disposal_details');
         const acquisitionDateInput = document.getElementById('acquisition_date');
+        
+        // Set today's date as default for acquisition date (only for create form)
         @if(!$isEdit)
         if (!acquisitionDateInput.value) {
             acquisitionDateInput.value = new Date().toISOString().split('T')[0];
         }
         @endif
+
+        // Function to toggle disposal method visibility
+        function toggleDisposalMethod() {
+            if (conditionSelect.value === 'Unserviceable') {
+                disposalMethodGroup.style.display = 'block';
+                disposalMethodSelect.setAttribute('required', 'required');
+            } else {
+                disposalMethodGroup.style.display = 'none';
+                disposalMethodSelect.removeAttribute('required');
+                disposalMethodSelect.value = '';
+                // Also hide disposal details
+                disposalDetailsGroup.style.display = 'none';
+                disposalDetailsInput.removeAttribute('required');
+                disposalDetailsInput.value = '';
+            }
+        }
+
+        // Function to toggle disposal details visibility
+        function toggleDisposalDetails() {
+            if (disposalMethodSelect.value === 'Others') {
+                disposalDetailsGroup.style.display = 'block';
+                disposalDetailsInput.setAttribute('required', 'required');
+            } else {
+                disposalDetailsGroup.style.display = 'none';
+                disposalDetailsInput.removeAttribute('required');
+                disposalDetailsInput.value = '';
+            }
+        }
+
+        // Initialize on page load
+        toggleDisposalMethod();
+        toggleDisposalDetails();
+
+        // Add event listeners
+        conditionSelect.addEventListener('change', toggleDisposalMethod);
+        disposalMethodSelect.addEventListener('change', toggleDisposalDetails);
 
         // Classification autocomplete functionality
         const classificationInput = document.getElementById('classification');
