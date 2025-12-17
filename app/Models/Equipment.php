@@ -21,6 +21,8 @@ class Equipment extends Model
         'unit_of_measurement',
         'unit_value',
         'condition',
+        'disposal_method',      // Added
+        'disposal_details',     // Added
         'acquisition_date',
         'location',
         'responsible_person',
@@ -78,6 +80,22 @@ class Equipment extends Model
     public function getConditionBadgeClassAttribute()
     {
         return $this->condition === 'Serviceable' ? 'status-serviceable' : 'status-unserviceable';
+    }
+
+    /**
+     * Get formatted disposal method
+     */
+    public function getFormattedDisposalMethodAttribute()
+    {
+        if (!$this->disposal_method) {
+            return 'N/A';
+        }
+        
+        if ($this->disposal_method === 'Others' && $this->disposal_details) {
+            return 'Others: ' . $this->disposal_details;
+        }
+        
+        return $this->disposal_method;
     }
 
     /**
