@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRequest;
 use App\Models\User;
+use App\Mail\UserCredentialMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -51,6 +54,9 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
+        // Store the plain password before hashing
+        $plainPassword = $validated['password'];
+
         // If admin role, set all permissions to true
         if ($validated['role'] === 'admin') {
             $validated['can_create'] = true;
@@ -72,9 +78,20 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
         $validated['status'] = $validated['status'] ?? 'active';
 
-        User::create($validated);
+        $user = User::create($validated);
 
-        return redirect()->route('users.index')->with('success', 'User has been successfully created!');
+        // Send credentials email
+        try {
+            Mail::to($user->email)->send(new UserCredentialMail($user, $plainPassword));
+            
+            return redirect()->route('users.index')
+                ->with('success', 'User has been successfully created and credentials have been sent to their email!');
+        } catch (\Exception $e) {
+            Log::error('Failed to send credential email: ' . $e->getMessage());
+            
+            return redirect()->route('users.index')
+                ->with('warning', 'User created successfully, but failed to send credentials email. Please share credentials manually.');
+        }
     }
 
     /**
@@ -128,11 +145,15 @@ class UserController extends Controller
         // Only update password if provided
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
+            
+            // Optionally send email notification about password change
+            // You can create a separate email template for this
         }
         
         $user->save();
 
-        return redirect()->route('users.index')->with('success', 'User information has been updated successfully!');
+        return redirect()->route('users.index')
+            ->with('success', 'User information has been updated successfully!');
     }
 
     /**

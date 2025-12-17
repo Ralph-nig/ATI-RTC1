@@ -86,12 +86,6 @@
                 <span class="title">Help</span>
             </a>
         </li>
-        <li>
-            <a href="{{ route('deleted-supplies.index') }}">
-                <span class="icon"><i class="fas fa-trash-restore"></i></span>
-                <span class="title">Deleted History</span>
-            </a>
-        </li>
         <li class="{{ Request::is('client/profile*') ? 'hovered' : '' }}">
             <a href="{{ route('client.profile.index') }}">
                 <span class="icon"><ion-icon name="settings-outline"></ion-icon></span>
