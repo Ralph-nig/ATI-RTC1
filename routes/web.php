@@ -19,6 +19,7 @@ use App\Http\Controllers\Client\RpciController;
 use App\Http\Controllers\Client\RpcPpeController;
 use App\Http\Controllers\Client\PpesController;
 use App\Http\Controllers\Client\AboutController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Mail;
 use App\Models\User;
@@ -29,8 +30,21 @@ Route::get('/', function () {
     return auth()->check() ? redirect('/client/dashboard') : redirect('/home');
 });
 
-// Authentication routes
-Auth::routes();
+// Custom Forgot Password Routes (MUST BE BEFORE Auth::routes())
+Route::get('/forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
+Route::post('/forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetCode'])->name('password.email');
+
+// Verify Code Routes
+Route::get('/verify-code', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showVerifyForm'])->name('password.verify.form');
+Route::post('/verify-code', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'verifyCode'])->name('password.verify');
+Route::post('/resend-code', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'resendCode'])->name('password.resend');
+
+// Reset Password Routes
+Route::get('/reset-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showResetForm'])->name('password.reset.form');
+Route::post('/reset-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'resetPassword'])->name('password.update');
+
+// Authentication routes - only login and register (NO password reset)
+Auth::routes(['register' => true, 'reset' => false, 'verify' => false, 'confirm' => false]);
 
 // Home route (landing page before login)
 Route::get('/home', [HomeController::class, 'index'])->name('home');
@@ -104,7 +118,7 @@ Route::get('/check-email-config', function () {
             <div class="buttons">
                 <a href="/send-test-email" class="btn btn-primary">📤 Send Test Email</a>
                 <a href="/preview-user-email" class="btn btn-secondary">👁️ Preview Email</a>
-                <a href="/check-email-log" class="btn btn-secondary">📝 Check Log File</a>
+                <a href="/check-email-log" class="btn btn-secondary">📄 Check Log File</a>
             </div>
         </div>
     </body>
@@ -271,7 +285,7 @@ Route::get('/check-email-log', function () {
     </head>
     <body>
         <div class="container">
-            <h1>📝 Recent Email Log</h1>
+            <h1>📄 Recent Email Log</h1>
             <div class="info">
                 <strong>ℹ️ Note:</strong> Showing last 150 lines from laravel.log<br>
                 Location: storage/logs/laravel.log
@@ -313,10 +327,10 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::get('supplies-export', [SuppliesController::class, 'export'])->name('supplies.export');
 
     Route::prefix('deleted-supplies')->name('deleted-supplies.')->group(function () {
-    Route::get('/', [DeletedSupplyController::class, 'index'])->name('index');
-    Route::get('/{id}', [DeletedSupplyController::class, 'show'])->name('show');
-    Route::post('/{id}/restore', [DeletedSupplyController::class, 'restore'])->name('restore');
-    Route::delete('/{id}/permanent', [DeletedSupplyController::class, 'permanentDelete'])->name('permanent-delete');
+        Route::get('/', [DeletedSupplyController::class, 'index'])->name('index');
+        Route::get('/{id}', [DeletedSupplyController::class, 'show'])->name('show');
+        Route::post('/{id}/restore', [DeletedSupplyController::class, 'restore'])->name('restore');
+        Route::delete('/{id}/permanent', [DeletedSupplyController::class, 'permanentDelete'])->name('permanent-delete');
     });
 
     // Equipment routes with export functionality
@@ -326,12 +340,11 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     ]);
     Route::get('equipment-export', [EquipmentController::class, 'export'])->name('equipment.export');
     Route::prefix('deleted-equipment')->name('deleted-equipment.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'index'])->name('index');
-    Route::get('/{id}', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'show'])->name('show');
-    Route::post('/{id}/restore', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'restore'])->name('restore');
-    Route::delete('/{id}/permanent', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'permanentDelete'])->name('permanent-delete');
+        Route::get('/', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'show'])->name('show');
+        Route::post('/{id}/restore', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'restore'])->name('restore');
+        Route::delete('/{id}/permanent', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'permanentDelete'])->name('permanent-delete');
     });
-
 
     // Report routes
     Route::resource('reports', ReportController::class)->names([
@@ -393,6 +406,7 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
         'update' => 'client.announcement.update',
         'destroy' => 'client.announcement.destroy'
     ]);
+    
     // Help routes 
     Route::resource('help', HelpController::class)->names([
         'index' => 'client.help.index',
@@ -427,7 +441,7 @@ Route::prefix('client/report')->group(function () {
 
     // RPCI report routes
     Route::get('/rpci', [RpciController::class, 'index'])->name('client.report.rpci');
-    // Use ReportController export handlers for RPCl quick-export endpoints
+    // Use ReportController export handlers for RPCI quick-export endpoints
     Route::get('/rpci/export/pdf', [App\Http\Controllers\Client\ReportController::class, 'exportRpciPdf'])->name('client.report.rpci.export.pdf');
     Route::get('/rpci/export/excel', [App\Http\Controllers\Client\ReportController::class, 'exportRpciExcel'])->name('client.report.rpci.export.excel');
 
