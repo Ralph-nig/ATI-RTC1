@@ -230,8 +230,67 @@
                             
                             <!-- Pagination -->
                             @if($supplies->hasPages())
-                                <div class="pagination">
-                                    {{ $supplies->appends(request()->query())->links() }}
+                                <div class="pagination-wrapper">
+                                    <div class="pagination-info">
+                                        Showing {{ $supplies->firstItem() }} to {{ $supplies->lastItem() }} of {{ $supplies->total() }} items
+                                    </div>
+                                    
+                                    <nav>
+                                        <ul class="pagination">
+                                            {{-- Previous Page Link --}}
+                                            @if ($supplies->onFirstPage())
+                                                <li class="disabled" aria-disabled="true">
+                                                    <span aria-hidden="true">
+                                                        <i class="fas fa-chevron-left"></i> Previous
+                                                    </span>
+                                                </li>
+                                            @else
+                                                <li>
+                                                    <a href="{{ $supplies->previousPageUrl() }}" rel="prev">
+                                                        <i class="fas fa-chevron-left"></i> Previous
+                                                    </a>
+                                                </li>
+                                            @endif
+
+                                            {{-- Pagination Elements --}}
+                                            @foreach ($supplies->links()->elements[0] as $page => $url)
+                                                @if ($page == $supplies->currentPage())
+                                                    <li class="active" aria-current="page">
+                                                        <span>{{ $page }}</span>
+                                                    </li>
+                                                @else
+                                                    <li>
+                                                        <a href="{{ $url }}">{{ $page }}</a>
+                                                    </li>
+                                                @endif
+                                            @endforeach
+
+                                            {{-- Next Page Link --}}
+                                            @if ($supplies->hasMorePages())
+                                                <li>
+                                                    <a href="{{ $supplies->nextPageUrl() }}" rel="next">
+                                                        Next <i class="fas fa-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                            @else
+                                                <li class="disabled" aria-disabled="true">
+                                                    <span aria-hidden="true">
+                                                        Next <i class="fas fa-chevron-right"></i>
+                                                    </span>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </nav>
+                                    
+                                    <div class="items-per-page">
+                                        <label for="perPage">Show:</label>
+                                        <select id="perPage" onchange="changePerPage(this.value)">
+                                            <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
+                                            <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                            <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                            <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                                        </select>
+                                    </div>
                                 </div>
                             @endif
                         @else
@@ -299,6 +358,14 @@
                 window.location.href = url.toString();
             });
         });
+
+        function changePerPage(perPage) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('per_page', perPage);
+            url.searchParams.delete('page'); // Reset to first page when changing items per page
+            window.location.href = url.toString();
+        }
+
     </script>
 
     @include('layouts.core.footer')
