@@ -5,6 +5,7 @@ use App\Http\Controllers\Client\SuppliesController;
 use App\Http\Controllers\Client\DeletedSupplyController;
 use App\Http\Controllers\Client\DeletedEquipmentController;
 use App\Http\Controllers\Client\EquipmentController;
+use App\Http\Controllers\Client\EquipmentMaintenanceController;
 use App\Http\Controllers\Client\DashboardController;
 use App\Http\Controllers\Client\ReportController;
 use App\Http\Controllers\Client\StockCardController;
@@ -339,12 +340,68 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
         'index' => 'client.equipment.index'
     ]);
     Route::get('equipment-export', [EquipmentController::class, 'export'])->name('equipment.export');
+    
     Route::prefix('deleted-equipment')->name('deleted-equipment.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'index'])->name('index');
-        Route::get('/{id}', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'show'])->name('show');
-        Route::post('/{id}/restore', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'restore'])->name('restore');
-        Route::delete('/{id}/permanent', [\App\Http\Controllers\Client\DeletedEquipmentController::class, 'permanentDelete'])->name('permanent-delete');
+        Route::get('/', [DeletedEquipmentController::class, 'index'])->name('index');
+        Route::get('/{id}', [DeletedEquipmentController::class, 'show'])->name('show');
+        Route::post('/{id}/restore', [DeletedEquipmentController::class, 'restore'])->name('restore');
+        Route::delete('/{id}/permanent', [DeletedEquipmentController::class, 'permanentDelete'])->name('permanent-delete');
     });
+
+    // Add this temporary route to web.php
+Route::get('/debug/equipment-maintenance', function() {
+    $equipment = \App\Models\Equipment::whereNotNull('maintenance_schedule_end')->get();
+    
+    $debug = [];
+    foreach ($equipment as $item) {
+        $debug[] = [
+            'article' => $item->article,
+            'maintenance_end' => $item->maintenance_schedule_end,
+            'maintenance_status' => $item->maintenance_status,
+            'days_until' => \Carbon\Carbon::today()->diffInDays($item->maintenance_schedule_end, false),
+            'should_warn' => $item->needsMaintenanceWarning()
+        ];
+    }
+    
+    return response()->json([
+        'total_equipment' => $equipment->count(),
+        'equipment_details' => $debug
+    ]);
+})->middleware('auth');
+
+// Equipment Maintenance Routes - NEW
+Route::prefix('equipment/maintenance')->name('client.equipment.maintenance.')->group(function () {
+    // Warnings page
+    Route::get('/warnings', [EquipmentMaintenanceController::class, 'warnings'])->name('warnings');
+    
+    // Process maintenance action (submit form from warning)
+    Route::post('/process/{warningId}', [EquipmentMaintenanceController::class, 'processMaintenance'])->name('process');
+    
+    // Maintenance Logs page
+    Route::get('/logs', [EquipmentMaintenanceController::class, 'logs'])->name('logs');
+    
+    // Get single log details (AJAX endpoint)
+    Route::get('/logs/{id}', function($id) {
+        $log = \App\Models\EquipmentMaintenanceLog::with(['equipment', 'user'])->findOrFail($id);
+        return view('client.equipment.maintenance.log-details', compact('log'));
+    })->name('log-details');
+    
+    // Export logs to Excel
+    Route::get('/logs/export', [EquipmentMaintenanceController::class, 'exportLogs'])->name('logs.export');
+    
+    // Dashboard warnings API (for widget)
+    Route::get('/api/dashboard-warnings', [EquipmentMaintenanceController::class, 'getDashboardWarnings'])->name('api.dashboard-warnings');
+    
+    // Generate warnings manually (admin only) - FIXED ROUTE
+    Route::get('/generate-warnings', [EquipmentMaintenanceController::class, 'checkAndGenerateWarnings'])->name('generate');
+
+    // Inside: Route::prefix('equipment/maintenance')->name('client.equipment.maintenance.')->group(function () {
+
+Route::post('/dismiss-notification', function() {
+    session(['maintenance_notification_dismissed_' . date('Y-m-d') => true]);
+    return response()->json(['success' => true]);
+})->name('dismiss-notification');
+});
 
     // Report routes
     Route::resource('reports', ReportController::class)->names([

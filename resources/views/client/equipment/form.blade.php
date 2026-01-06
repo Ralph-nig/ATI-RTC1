@@ -1,4 +1,5 @@
 {{-- 
+    Enhanced Equipment Form with AUTOMATIC 30-Day Maintenance Schedule
     Usage: 
     @include('client.equipment.form', ['equipment' => $equipment, 'action' => route('equipment.update', $equipment), 'method' => 'PUT'])
     @include('client.equipment.form', ['action' => route('equipment.store')])
@@ -65,9 +66,7 @@
                            value="{{ old('classification', $isEdit ? $equipment->classification : '') }}" 
                            placeholder="Enter Classification"
                            autocomplete="off">
-                    <div id="classification-dropdown" class="autocomplete-dropdown" style="display: none;">
-                        <!-- Dropdown items will be populated dynamically -->
-                    </div>
+                    <div id="classification-dropdown" class="autocomplete-dropdown" style="display: none;"></div>
                 </div>
                 @error('classification')
                     <div class="error-message">{{ $message }}</div>
@@ -166,6 +165,25 @@
                     <div class="error-message">{{ $message }}</div>
                 @enderror
             </div>
+
+            {{-- REMOVED: Manual maintenance schedule fields --}}
+            {{-- The system now automatically sets 30-day maintenance schedules --}}
+
+            {{-- OPTIONAL: Show current maintenance schedule for edit mode --}}
+            @if($isEdit && $equipment->maintenance_schedule_end)
+            <div class="form-group full-width">
+                <div class="alert alert-info">
+                    <i class="fas fa-calendar-check"></i>
+                    <strong>Current Maintenance Schedule:</strong>
+                    <br>
+                    Check-in: {{ $equipment->maintenance_schedule_start ? $equipment->maintenance_schedule_start->format('M d, Y') : 'N/A' }}
+                    <br>
+                    Deadline: {{ $equipment->maintenance_schedule_end->format('M d, Y') }}
+                    <br>
+                    <small>Maintenance schedule will be automatically updated to 30 days when maintenance action is taken.</small>
+                </div>
+            </div>
+            @endif
             
             <!-- Responsibility Center (Location) -->
             <div class="form-group">
@@ -268,6 +286,13 @@
     transition: all 0.3s ease;
 }
 
+.form-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
 #disposal-method-group,
 #disposal-details-group {
     animation: slideDown 0.3s ease;
@@ -310,7 +335,6 @@
                 disposalMethodGroup.style.display = 'none';
                 disposalMethodSelect.removeAttribute('required');
                 disposalMethodSelect.value = '';
-                // Also hide disposal details
                 disposalDetailsGroup.style.display = 'none';
                 disposalDetailsInput.removeAttribute('required');
                 disposalDetailsInput.value = '';

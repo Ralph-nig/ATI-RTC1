@@ -18,6 +18,9 @@
         <div class="details">
             @include('layouts.core.header')
             @include('layouts.core.footer')
+            <!-- Auto Maintenance Warning Popup -->
+            
+            @include('components.maintenance-notification')
             
             <div class="supplies-container">
                 <!-- Header Section -->
@@ -49,6 +52,10 @@
                         </div>
                                                        
                         <div class="action-buttons">
+                            <a href="{{ route('client.equipment.maintenance.warnings') }}" class="btn btn-warning">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Maintenance
+                            </a>
                             @if(auth()->user()->hasPermission('create'))
                                 <a href="{{ route('equipment.create') }}" class="btn btn-success">
                                     <i class="fas fa-plus"></i>
