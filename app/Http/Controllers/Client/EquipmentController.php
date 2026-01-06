@@ -66,6 +66,7 @@ class EquipmentController extends Controller
                 ->with('error', 'You do not have permission to create equipment.');
         }
 
+        // UPDATED: Removed maintenance schedule fields from validation
         $validated = $request->validate([
             'property_number' => 'required|string|max:255|unique:equipment,property_number',
             'article' => 'required|string|max:255',
@@ -85,10 +86,11 @@ class EquipmentController extends Controller
             'disposal_details.required_if' => 'Please specify the disposal details when selecting "Others".',
         ]);
 
+        // Create equipment - maintenance schedule is auto-set in the model's boot method
         Equipment::create($validated);
 
         return redirect()->route('client.equipment.index')
-            ->with('success', 'Equipment added successfully!');
+            ->with('success', 'Equipment added successfully! Maintenance schedule automatically set for 30 days.');
     }
 
     /**
@@ -102,7 +104,7 @@ class EquipmentController extends Controller
                 ->with('error', 'You do not have permission to view equipment.');
         }
 
-        $equipment = Equipment::findOrFail($id);
+        $equipment = Equipment::with(['maintenanceLogs', 'activeWarnings'])->findOrFail($id);
         return view('client.equipment.view', compact('equipment'));
     }
 
@@ -135,6 +137,7 @@ class EquipmentController extends Controller
 
         $equipment = Equipment::findOrFail($id);
 
+        // UPDATED: Removed maintenance schedule fields from validation
         $validated = $request->validate([
             'property_number' => 'required|string|max:255|unique:equipment,property_number,' . $id,
             'article' => 'required|string|max:255',
@@ -248,7 +251,10 @@ class EquipmentController extends Controller
             'Condition', 
             'Disposal Method',
             'Disposal Details',
-            'Acquisition Date', 
+            'Acquisition Date',
+            'Maintenance Start',
+            'Maintenance Deadline',
+            'Maintenance Status',
             'Location', 
             'Responsible Person', 
             'Remarks'
@@ -267,6 +273,9 @@ class EquipmentController extends Controller
                 $item->disposal_method ?: 'N/A',
                 $item->disposal_details ?: 'N/A',
                 $item->acquisition_date ? $item->acquisition_date->format('F d, Y') : 'N/A',
+                $item->maintenance_schedule_start ? $item->maintenance_schedule_start->format('F d, Y') : 'N/A',
+                $item->maintenance_schedule_end ? $item->maintenance_schedule_end->format('F d, Y') : 'N/A',
+                $item->maintenance_status ?: 'N/A',
                 $item->location ?: 'N/A',
                 $item->responsible_person ?: 'N/A',
                 $item->remarks ?: 'N/A'
@@ -291,22 +300,39 @@ class EquipmentController extends Controller
                 return [
                     \Maatwebsite\Excel\Events\AfterSheet::class => function (\Maatwebsite\Excel\Events\AfterSheet $event) {
                         $sheet = $event->sheet->getDelegate();
-                        $sheet->getColumnDimension('A')->setWidth(15); // Property Number
-                        $sheet->getColumnDimension('B')->setWidth(20); // Article
-                        $sheet->getColumnDimension('C')->setWidth(15); // Classification
-                        $sheet->getColumnDimension('D')->setWidth(30); // Description
-                        $sheet->getColumnDimension('E')->setWidth(15); // Unit of Measurement
-                        $sheet->getColumnDimension('F')->setWidth(12); // Unit Value
-                        $sheet->getColumnDimension('G')->setWidth(12); // Condition
-                        $sheet->getColumnDimension('H')->setWidth(15); // Disposal Method
-                        $sheet->getColumnDimension('I')->setWidth(20); // Disposal Details
-                        $sheet->getColumnDimension('J')->setWidth(15); // Acquisition Date
-                        $sheet->getColumnDimension('K')->setWidth(20); // Location
-                        $sheet->getColumnDimension('L')->setWidth(20); // Responsible Person
-                        $sheet->getColumnDimension('M')->setWidth(30); // Remarks
+                        $sheet->getColumnDimension('A')->setWidth(15);
+                        $sheet->getColumnDimension('B')->setWidth(20);
+                        $sheet->getColumnDimension('C')->setWidth(15);
+                        $sheet->getColumnDimension('D')->setWidth(30);
+                        $sheet->getColumnDimension('E')->setWidth(15);
+                        $sheet->getColumnDimension('F')->setWidth(12);
+                        $sheet->getColumnDimension('G')->setWidth(12);
+                        $sheet->getColumnDimension('H')->setWidth(15);
+                        $sheet->getColumnDimension('I')->setWidth(20);
+                        $sheet->getColumnDimension('J')->setWidth(15);
+                        $sheet->getColumnDimension('K')->setWidth(15);
+                        $sheet->getColumnDimension('L')->setWidth(18);
+                        $sheet->getColumnDimension('M')->setWidth(15);
+                        $sheet->getColumnDimension('N')->setWidth(20);
+                        $sheet->getColumnDimension('O')->setWidth(20);
+                        $sheet->getColumnDimension('P')->setWidth(30);
                     }
                 ];
             }
-        }, 'property_cards.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+        }, 'equipment_list.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+    }
+
+    /**
+     * Get unique classifications for autocomplete
+     */
+    public function getClassifications()
+    {
+        $classifications = Equipment::whereNotNull('classification')
+            ->distinct()
+            ->pluck('classification')
+            ->filter()
+            ->values();
+
+        return response()->json($classifications);
     }
 }
