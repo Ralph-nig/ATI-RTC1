@@ -90,7 +90,7 @@ class EquipmentController extends Controller
         Equipment::create($validated);
 
         return redirect()->route('client.equipment.index')
-            ->with('success', 'Equipment added successfully! Maintenance schedule automatically set for 30 days.');
+            ->with('success', 'Equipment added successfully!');
     }
 
     /**
