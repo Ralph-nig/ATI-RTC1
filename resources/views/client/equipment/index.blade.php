@@ -62,12 +62,12 @@
                                     Add Equipment
                                 </a>
                             @endif
-                            @if(auth()->user()->hasPermission('read'))
+                            <!-- @if(auth()->user()->hasPermission('read'))
                                 <a href="{{ route('deleted-equipment.index') }}" class="btn btn-warning">
                                     <i class="fas fa-trash-restore"></i>
                                     Deleted History
                                 </a>
-                            @endif
+                            @endif -->
                             @if(auth()->user()->hasPermission('read'))
                                 <a href="{{ route('equipment.export') }}" class="btn btn-primary">
                                     <i class="fas fa-download"></i>

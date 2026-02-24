@@ -180,7 +180,7 @@
                     <br>
                     Deadline: {{ $equipment->maintenance_schedule_end->format('M d, Y') }}
                     <br>
-                    <small>Maintenance schedule will be automatically updated to 30 days when maintenance action is taken.</small>
+                    <!-- <small>Maintenance schedule will be automatically updated to 30 days when maintenance action is taken.</small> -->
                 </div>
             </div>
             @endif

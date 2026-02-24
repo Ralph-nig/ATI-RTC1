@@ -70,7 +70,7 @@ class EquipmentMaintenanceController extends Controller
     }
 
     /**
-     * UPDATED: Process maintenance action with AUTOMATIC 30-day reschedule
+     * UPDATED: Process maintenance action with AI-POWERED re-prediction
      */
     public function processMaintenance(Request $request, $warningId)
     {
@@ -96,15 +96,18 @@ class EquipmentMaintenanceController extends Controller
                 'condition_before' => $conditionBefore,
                 'condition_after' => $validated['condition_after'],
                 'maintenance_date' => Carbon::today(),
-                'notes' => 'Next maintenance automatically scheduled for 30 days from today',
+                'notes' => 'Maintenance schedule predicted by AI',
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent()
             ]);
 
-            // UPDATED: Automatically reschedule for 30 days
-            $equipment->rescheduleMaintenanceFor30Days();
+            // UPDATED: Use AI to predict next maintenance schedule
+            $prediction = $equipment->repredictMaintenanceAfterAction(
+                $validated['action_taken'],
+                $validated['condition_after']
+            );
             
-            // Also update the condition
+            // Update the condition
             $equipment->condition = $validated['condition_after'];
             $equipment->save();
 
@@ -118,12 +121,15 @@ class EquipmentMaintenanceController extends Controller
 
             DB::commit();
 
-            $nextDate = Carbon::today()->addDays(30)->format('M d, Y');
+            $nextDate = Carbon::today()->addDays($prediction['days'])->format('M d, Y');
+            $confidence = ucfirst($prediction['confidence']);
+            
             return redirect()->route('client.equipment.maintenance.warnings')
-                ->with('success', "Maintenance action recorded successfully! Next maintenance automatically scheduled for {$nextDate}");
+                ->with('success', "✅ Maintenance recorded! AI predicted next check: {$nextDate} ({$prediction['days']} days) - Confidence: {$confidence}");
 
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Maintenance processing error: ' . $e->getMessage());
             return back()->with('error', 'Error processing maintenance: ' . $e->getMessage());
         }
     }
@@ -213,8 +219,41 @@ class EquipmentMaintenanceController extends Controller
         }
 
         return redirect()->back()->with('success', 
-            "Warnings Generated! Created: {$warningsCreated}, Updated: {$warningsUpdated}."
+            "🤖 AI Warnings Generated! Created: {$warningsCreated}, Updated: {$warningsUpdated}."
         );
+    }
+
+    /**
+     * NEW: Trigger AI re-prediction for specific equipment
+     */
+    public function repredictMaintenance($equipmentId)
+    {
+        try {
+            $equipment = Equipment::findOrFail($equipmentId);
+            $prediction = $equipment->predictMaintenanceScheduleWithAI();
+            
+            return redirect()->back()->with('success', 
+                "🤖 AI Prediction Updated! Next maintenance in {$prediction['days']} days. Reason: {$prediction['reasoning']}"
+            );
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * NEW: Show AI prediction details
+     */
+    public function showPredictionDetails($equipmentId)
+    {
+        $equipment = Equipment::findOrFail($equipmentId);
+        
+        return response()->json([
+            'predicted_days' => $equipment->maintenance_prediction_days,
+            'reasoning' => $equipment->maintenance_prediction_reasoning,
+            'confidence' => $equipment->maintenance_prediction_confidence,
+            'next_maintenance' => $equipment->maintenance_schedule_end?->format('M d, Y'),
+            'days_until' => $equipment->days_until_maintenance
+        ]);
     }
 
     /**

@@ -395,6 +395,13 @@ Route::prefix('equipment/maintenance')->name('client.equipment.maintenance.')->g
     // Generate warnings manually (admin only) - FIXED ROUTE
     Route::get('/generate-warnings', [EquipmentMaintenanceController::class, 'checkAndGenerateWarnings'])->name('generate');
 
+    // AI Re-prediction endpoint
+Route::post('/repredict/{equipmentId}', [EquipmentMaintenanceController::class, 'repredictMaintenance'])
+    ->name('repredict');
+
+// Get AI prediction details (AJAX)
+Route::get('/prediction/{equipmentId}', [EquipmentMaintenanceController::class, 'showPredictionDetails'])
+    ->name('prediction.details');
     // Inside: Route::prefix('equipment/maintenance')->name('client.equipment.maintenance.')->group(function () {
 
 Route::post('/dismiss-notification', function() {

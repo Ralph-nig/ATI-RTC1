@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use App\Services\EquipmentMaintenancePredictionService;
 
 class Equipment extends Model
 {
@@ -27,6 +28,9 @@ class Equipment extends Model
         'maintenance_schedule_start',
         'maintenance_schedule_end',
         'maintenance_status',
+        'maintenance_prediction_days',
+        'maintenance_prediction_reasoning',
+        'maintenance_prediction_confidence',
         'last_maintenance_check',
         'location',
         'responsible_person',
@@ -227,24 +231,64 @@ class Equipment extends Model
     }
 
     /**
-     * NEW: Set automatic 30-day maintenance schedule
+     * NEW: AI-Powered maintenance schedule prediction
      */
-    public function setAutoMaintenanceSchedule()
+    public function predictMaintenanceScheduleWithAI()
     {
+        $service = new EquipmentMaintenancePredictionService();
+        $prediction = $service->predictMaintenanceSchedule($this);
+        
         $today = Carbon::today();
         
         $this->maintenance_schedule_start = $today;
-        $this->maintenance_schedule_end = $today->copy()->addDays(30);
+        $this->maintenance_schedule_end = $today->copy()->addDays($prediction['days']);
         $this->maintenance_status = 'pending';
+        $this->maintenance_prediction_days = $prediction['days'];
+        $this->maintenance_prediction_reasoning = $prediction['reasoning'];
+        $this->maintenance_prediction_confidence = $prediction['confidence'];
         
         $this->save();
+        
+        return $prediction;
     }
 
     /**
-     * NEW: Reschedule maintenance for next 30 days
+     * NEW: Re-predict after maintenance action
+     */
+    public function repredictMaintenanceAfterAction(string $actionTaken, string $conditionAfter)
+    {
+        $service = new EquipmentMaintenancePredictionService();
+        $prediction = $service->repredictAfterMaintenance($this, $actionTaken, $conditionAfter);
+        
+        $today = Carbon::today();
+        
+        $this->maintenance_schedule_start = $today;
+        $this->maintenance_schedule_end = $today->copy()->addDays($prediction['days']);
+        $this->maintenance_status = 'pending';
+        $this->maintenance_prediction_days = $prediction['days'];
+        $this->maintenance_prediction_reasoning = $prediction['reasoning'];
+        $this->maintenance_prediction_confidence = $prediction['confidence'];
+        $this->last_maintenance_check = now();
+        
+        $this->save();
+        
+        return $prediction;
+    }
+
+    /**
+     * DEPRECATED: Use predictMaintenanceScheduleWithAI() instead
+     */
+    public function setAutoMaintenanceSchedule()
+    {
+        return $this->predictMaintenanceScheduleWithAI();
+    }
+
+    /**
+     * DEPRECATED: Use repredictMaintenanceAfterAction() instead
      */
     public function rescheduleMaintenanceFor30Days()
     {
+        // Fallback to 30 days if AI fails
         $today = Carbon::today();
         
         $this->maintenance_schedule_start = $today;
@@ -333,12 +377,19 @@ class Equipment extends Model
     {
         parent::boot();
 
-        // UPDATED: Automatically set 30-day maintenance schedule when creating
-        static::creating(function ($equipment) {
-            $today = Carbon::today();
-            $equipment->maintenance_schedule_start = $today;
-            $equipment->maintenance_schedule_end = $today->copy()->addDays(30);
-            $equipment->maintenance_status = 'pending';
+        // UPDATED: Use AI prediction when creating equipment
+        static::created(function ($equipment) {
+            try {
+                $equipment->predictMaintenanceScheduleWithAI();
+            } catch (\Exception $e) {
+                \Log::error('AI prediction failed for new equipment: ' . $e->getMessage());
+                // Fallback to 30 days
+                $today = Carbon::today();
+                $equipment->maintenance_schedule_start = $today;
+                $equipment->maintenance_schedule_end = $today->copy()->addDays(30);
+                $equipment->maintenance_status = 'pending';
+                $equipment->save();
+            }
         });
 
         // Automatically update maintenance status before saving
