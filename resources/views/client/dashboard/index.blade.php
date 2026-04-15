@@ -247,7 +247,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, #296218 0%, #1e4612 100%);
+    background: linear-gradient(135deg, #49a12f 0%, #1e4612 100%);
     color: white;
     padding: 20px 25px;
     border-bottom: 3px solid #ffc107;

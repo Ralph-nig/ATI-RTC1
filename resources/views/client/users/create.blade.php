@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New User</title>
+    <title>ATI-RTC1 - Add User</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/users.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
@@ -16,10 +17,10 @@
         @include('layouts.core.sidebar')
         <div class="details">
             @include('layouts.core.header')
-            
+
             <div class="form-container">
                 <div class="form-header">
-                    <a href="{{ url('client/users') }}" class="back-button">
+                    <a href="{{ route('users.index') }}" class="back-button">
                         <i class="fas fa-arrow-left"></i>
                         Back to Users
                     </a>
@@ -28,7 +29,7 @@
                         Add New User
                     </h1>
                 </div>
-                
+
                 <div class="form-content">
                     @if ($errors->any())
                         <div class="alert alert-danger">
@@ -40,8 +41,8 @@
                             </ul>
                         </div>
                     @endif
-                    
-                    <form method="POST" action="{{ url('client/users') }}">
+
+                    <form method="POST" action="{{ route('users.store') }}">
                         @csrf
                         @include('client.users.form')
                     </form>

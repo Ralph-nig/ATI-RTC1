@@ -27,6 +27,7 @@ class User extends Authenticatable
         'can_delete',
         'can_stock_in',
         'can_stock_out',
+        'can_request',   // NEW: for requestor role
         'avatar',
     ];
 
@@ -57,12 +58,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'can_create' => 'boolean',
-            'can_read' => 'boolean',
-            'can_update' => 'boolean',
-            'can_delete' => 'boolean',
-            'can_stock_in' => 'boolean',
+            'can_create'  => 'boolean',
+            'can_read'    => 'boolean',
+            'can_update'  => 'boolean',
+            'can_delete'  => 'boolean',
+            'can_stock_in'  => 'boolean',
             'can_stock_out' => 'boolean',
+            'can_request'   => 'boolean', // NEW
         ];
     }
 
@@ -71,7 +73,7 @@ class User extends Authenticatable
      */
     public function getCreatedDateAttribute()
     {
-        return $this->created_at->format('d F, Y');
+        return $this->created_at ? $this->created_at->format('d F, Y') : 'N/A';
     }
 
     /**
@@ -95,6 +97,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is requestor
+     */
+    public function isRequestor(): bool
+    {
+        return $this->role === 'requestor';
+    }
+
+    /**
      * Check if user has permission to perform an action
      */
     public function hasPermission(string $permission): bool
@@ -106,13 +116,14 @@ class User extends Authenticatable
 
         // Check specific permission
         return match($permission) {
-            'create' => $this->can_create,
-            'read' => $this->can_read,
-            'update' => $this->can_update,
-            'delete' => $this->can_delete,
-            'stock_in' => $this->can_stock_in,
+            'create'    => $this->can_create,
+            'read'      => $this->can_read,
+            'update'    => $this->can_update,
+            'delete'    => $this->can_delete,
+            'stock_in'  => $this->can_stock_in,
             'stock_out' => $this->can_stock_out,
-            default => false,
+            'request'   => $this->can_request,  // NEW
+            default     => false,
         };
     }
 
@@ -156,7 +167,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get stock movements performed by this user (if you have a StockMovement model)
+     * Get stock movements performed by this user
      */
     public function stockMovements()
     {

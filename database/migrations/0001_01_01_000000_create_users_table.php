@@ -15,8 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->enum('role', ['user', 'admin'])->default('user');
+            $table->enum('role', ['user', 'admin', 'requestor'])->default('user');
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->boolean('can_create')->default(false);
+            $table->boolean('can_read')->default(true);
+            $table->boolean('can_update')->default(false);
+            $table->boolean('can_delete')->default(false);
+            $table->boolean('can_stock_in')->default(false);
+            $table->boolean('can_stock_out')->default(false);
+            $table->boolean('can_request')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

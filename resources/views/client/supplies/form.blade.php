@@ -92,7 +92,8 @@
                             'boxes' => 'Boxes',
                             'packs' => 'Packs',
                             'meters' => 'Meters',
-                            'rolls' => 'Rolls'
+                            'rolls' => 'Rolls',
+                            'ream' => 'Reams'
                         ];
                     @endphp
                     @foreach($units as $value => $label)
@@ -136,7 +137,7 @@
             </div>
             
             <!-- Supplier -->
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <label for="supplier" class="form-label">Supplier</label>
                 <div class="input-group">
                     <i class="fas fa-truck"></i>
@@ -153,7 +154,7 @@
                 @error('supplier')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
-            </div>
+            </div> -->
             
             <!-- Purchase Date -->
             <div class="form-group">
@@ -178,7 +179,7 @@
                 @enderror
             </div>
             
-            <!-- Notes -->
+            <!-- Notes
             <div class="form-group full-width">
                 <label for="notes" class="form-label">Notes</label>
                 <textarea id="notes" name="notes" class="form-input form-textarea" 
@@ -186,7 +187,7 @@
                 @error('notes')
                     <div class="error-message">{{ $message }}</div>
                 @enderror
-            </div>
+            </div> -->
         </div>
         
         <div class="form-actions">

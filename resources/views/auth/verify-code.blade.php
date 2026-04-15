@@ -262,6 +262,8 @@
 </head>
 
 <body>
+    @php $emailValue = session('email') ?? old('email') @endphp
+
     <div class="verify-container">
         <div class="header-section">
             <div class="icon-container">
@@ -271,9 +273,9 @@
             <p>Enter the 6-digit code we sent to your email</p>
         </div>
 
-        @if(session('email'))
+        @if($emailValue)
             <div class="email-sent-to">
-                📧 Code sent to: <strong>{{ session('email') }}</strong>
+                📧 Code sent to: <strong>{{ $emailValue }}</strong>
             </div>
         @endif
 
@@ -291,7 +293,7 @@
 
         <form method="POST" action="{{ route('password.verify') }}" id="verifyForm">
             @csrf
-            <input type="hidden" name="email" value="{{ session('email') }}">
+            <input type="hidden" name="email" value="{{ $emailValue }}">
             
             <div class="form-group">
                 <label>Verification Code</label>
@@ -315,7 +317,7 @@
             <p class="resend-text">Didn't receive the code?</p>
             <form method="POST" action="{{ route('password.resend') }}" class="resend-form" id="resendForm">
                 @csrf
-                <input type="hidden" name="email" value="{{ session('email') }}">
+                <input type="hidden" name="email" value="{{ $emailValue }}">
                 <button type="submit" class="resend-btn" id="resendBtn">
                     Resend Code
                 </button>

@@ -24,7 +24,7 @@
                 <div class="supplies-header">
                     <h1 class="supplies-title">
                         <i class="fas fa-clipboard-list"></i>
-                        Stock Card
+                        Supply
                     </h1>
                     
                     <!-- Controls Row -->
@@ -33,30 +33,11 @@
                             <div class="search-box">
                                 <i class="fas fa-search"></i>
                                 <input type="text" placeholder="Search by items or categories" 
-                                       value="{{ request('search') }}" id="searchInput">
+                                value="{{ request('search') }}" id="searchInput">
                             </div>                    
                         </div>
                         
                         <div class="action-buttons">
-                            @if(auth()->user()->hasPermission('stock_in'))
-                                <a href="{{ route('client.stockcard.stock-in') }}" class="btn btn-success">
-                                    <i class="fas fa-arrow-down"></i>
-                                    Stock In
-                                </a>
-                            @endif
-
-                            @if(auth()->user()->hasPermission('stock_out'))
-                                <a href="{{ route('client.stockcard.stock-out') }}" class="btn btn-danger">
-                                    <i class="fas fa-arrow-up"></i>
-                                    Stock Out
-                                </a>
-                            @endif
-
-                            <a href="{{ route('client.stockcard.export.all.excel', request()->query()) }}" class="btn btn-primary">
-                                <i class="fas fa-download"></i>
-                                Export
-                            </a>
-
                             @if(!auth()->user()->hasPermission('stock_in') && !auth()->user()->hasPermission('stock_out'))
                                 <div class="no-permission-message">
                                     <i class="fas fa-lock"></i>
@@ -107,7 +88,7 @@
                                             @endif
                                         </a>
                                     </th>
-                                    <th style="width: 15%; text-align: center;">
+                                    <th style="width: 15%; text-align: left;">
                                         <i class="fas fa-cog" style="margin-right: 5px;"></i>Action
                                     </th>
                                 </tr>
@@ -130,17 +111,15 @@
                                         </td>
                                         <td>
                                             <div style="margin-bottom: 8px;">
-                                                <!-- Combined Description Format -->
                                                 <div style="font-weight: 600; font-size: 16px; color: #333; margin-bottom: 4px; line-height: 1.4;">
                                                     {{ $supply->name }}@if($supply->description), {{ $supply->description }}@endif, {{ $supply->quantity }} {{ $supply->unit }}
                                                 </div>
-                                            
                                             </div>
                                         </td>
                                         <td style="text-align: center;">
                                             <div class="action-buttons-cell">
                                                 <a href="{{ route('client.stockcard.show', $supply->id) }}" class="btn btn-primary btn-sm" title="View Details">
-                                                    <i class="fas fa-eye"></i>
+                                                    <i class="fas fa-edit"></i>
                                                 </a>
                                             </div>
                                         </td>
@@ -151,8 +130,67 @@
                         
                         <!-- Pagination -->
                         @if($supplies->hasPages())
-                            <div class="pagination">
-                                {{ $supplies->appends(request()->query())->links() }}
+                            <div class="pagination-wrapper">
+                                <div class="pagination-info">
+                                    Showing {{ $supplies->firstItem() }} to {{ $supplies->lastItem() }} of {{ $supplies->total() }} results
+                                </div>
+
+                                <nav>
+                                    <ul class="pagination">
+                                        {{-- Previous Page Link --}}
+                                        @if ($supplies->onFirstPage())
+                                            <li class="disabled" aria-disabled="true">
+                                                <span aria-hidden="true">
+                                                    <i class="fas fa-chevron-left"></i> Previous
+                                                </span>
+                                            </li>
+                                        @else
+                                            <li>
+                                                <a href="{{ $supplies->appends(request()->query())->previousPageUrl() }}" rel="prev">
+                                                    <i class="fas fa-chevron-left"></i> Previous
+                                                </a>
+                                            </li>
+                                        @endif
+
+                                        {{-- Page Number Links --}}
+                                        @foreach ($supplies->appends(request()->query())->getUrlRange(1, $supplies->lastPage()) as $page => $url)
+                                            @if ($page == $supplies->currentPage())
+                                                <li class="active" aria-current="page">
+                                                    <span>{{ $page }}</span>
+                                                </li>
+                                            @else
+                                                <li>
+                                                    <a href="{{ $url }}">{{ $page }}</a>
+                                                </li>
+                                            @endif
+                                        @endforeach
+
+                                        {{-- Next Page Link --}}
+                                        @if ($supplies->hasMorePages())
+                                            <li>
+                                                <a href="{{ $supplies->appends(request()->query())->nextPageUrl() }}" rel="next">
+                                                    Next <i class="fas fa-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        @else
+                                            <li class="disabled" aria-disabled="true">
+                                                <span aria-hidden="true">
+                                                    Next <i class="fas fa-chevron-right"></i>
+                                                </span>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </nav>
+
+                                <div class="items-per-page">
+                                    <label for="perPage">Show:</label>
+                                    <select id="perPage" onchange="changePerPage(this.value)">
+                                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
+                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                        <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                                    </select>
+                                </div>
                             </div>
                         @endif
                     @else
@@ -175,14 +213,12 @@
 
     <script>
         $(document).ready(function() {
-            // Setup CSRF token for AJAX
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
 
-            // Search functionality
             let searchTimeout;
             $('#searchInput').on('input', function() {
                 clearTimeout(searchTimeout);
@@ -199,7 +235,6 @@
                 }, 500);
             });
 
-            // Category filter
             $('#categoryFilter').on('change', function() {
                 const category = $(this).val();
                 const url = new URL(window.location.href);
@@ -211,7 +246,6 @@
                 window.location.href = url.toString();
             });
 
-            // Stock filter
             $('#stockFilter').on('change', function() {
                 const lowStock = $(this).val();
                 const url = new URL(window.location.href);
@@ -223,6 +257,13 @@
                 window.location.href = url.toString();
             });
         });
+
+        function changePerPage(perPage) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('per_page', perPage);
+            url.searchParams.delete('page');
+            window.location.href = url.toString();
+        }
     </script>
 
     <style>

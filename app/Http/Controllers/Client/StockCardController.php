@@ -219,6 +219,113 @@ class StockCardController extends Controller
     }
 
     /**
+     * Update a specific stock movement record.
+     */
+    public function updateMovement(Request $request, $id)
+    {
+        $movement = StockMovement::findOrFail($id);
+        $supply   = Supplies::findOrFail($movement->supply_id);
+
+        $validated = $request->validate([
+            'type'     => 'required|in:in,out',
+            'quantity' => 'required|integer|min:1',
+            'notes'    => 'nullable|string',
+        ]);
+
+        // Reverse the effect of the old movement on the supply quantity
+        if ($movement->type === 'in') {
+            $supply->decrement('quantity', $movement->quantity);
+        } else {
+            $supply->increment('quantity', $movement->quantity);
+        }
+
+        // Apply the new movement
+        $newQty = $validated['quantity'];
+        $newType = $validated['type'];
+
+        if ($newType === 'in') {
+            $supply->increment('quantity', $newQty);
+        } else {
+            if ($supply->quantity < $newQty) {
+                // Undo the reversal before returning error
+                if ($movement->type === 'in') {
+                    $supply->increment('quantity', $movement->quantity);
+                } else {
+                    $supply->decrement('quantity', $movement->quantity);
+                }
+                return redirect()->back()->withErrors(['quantity' => 'Not enough stock available.']);
+            }
+            $supply->decrement('quantity', $newQty);
+        }
+
+        $supply->refresh();
+
+        // Audit trail entry
+        StockAuditTrail::create([
+            'user_id'           => auth()->id(),
+            'supply_id'         => $supply->id,
+            'stock_movement_id' => $movement->id,
+            'action_type'       => 'edit_movement',
+            'quantity'          => $newQty,
+            'balance_before'    => $movement->balance_after,
+            'balance_after'     => $supply->quantity,
+            'reference'         => $movement->reference,
+            'notes'             => 'Edited: ' . ($validated['notes'] ?? ''),
+            'ip_address'        => $request->ip(),
+            'user_agent'        => $request->userAgent(),
+        ]);
+
+        // Update the movement record
+        $movement->update([
+            'type'          => $newType,
+            'quantity'      => $newQty,
+            'notes'         => $validated['notes'],
+            'balance_after' => $supply->quantity,
+        ]);
+
+        return redirect()
+            ->route('client.stockcard.show', $supply->id)
+            ->with('success', 'Movement updated successfully.');
+    }
+
+    /**
+     * Delete a specific stock movement record.
+     */
+    public function destroyMovement(Request $request, $id)
+    {
+        $movement = StockMovement::findOrFail($id);
+        $supply   = Supplies::findOrFail($movement->supply_id);
+
+        // Reverse the movement's effect on current stock
+        if ($movement->type === 'in') {
+            $supply->decrement('quantity', $movement->quantity);
+        } else {
+            $supply->increment('quantity', $movement->quantity);
+        }
+
+        // Audit trail
+        StockAuditTrail::create([
+            'user_id'           => auth()->id(),
+            'supply_id'         => $supply->id,
+            'stock_movement_id' => $movement->id,
+            'action_type'       => 'delete_movement',
+            'quantity'          => $movement->quantity,
+            'balance_before'    => $movement->balance_after,
+            'balance_after'     => $supply->quantity,
+            'reference'         => $movement->reference,
+            'notes'             => 'Movement deleted',
+            'ip_address'        => $request->ip(),
+            'user_agent'        => $request->userAgent(),
+        ]);
+
+        $movement->delete();
+
+        return redirect()
+            ->route('client.stockcard.show', $supply->id)
+            ->with('success', 'Movement deleted successfully.');
+    }
+
+    /**
      * Export stock card to Excel
      */
     public function exportExcel($id)

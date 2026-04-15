@@ -18,10 +18,7 @@
         <div class="details">
             @include('layouts.core.header')
             @include('layouts.core.footer')
-            <!-- Auto Maintenance Warning Popup -->
-            
-            @include('components.maintenance-notification')
-            
+
             <div class="supplies-container">
                 <!-- Header Section -->
                 <div class="supplies-header">
@@ -52,10 +49,6 @@
                         </div>
                                                        
                         <div class="action-buttons">
-                            <a href="{{ route('client.equipment.maintenance.warnings') }}" class="btn btn-warning">
-                                <i class="fas fa-exclamation-triangle"></i> 
-                                Maintenance
-                            </a>
                             @if(auth()->user()->hasPermission('create'))
                                 <a href="{{ route('equipment.create') }}" class="btn btn-success">
                                     <i class="fas fa-plus"></i>
@@ -159,7 +152,9 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <div style="font-weight: 600; margin-bottom: 4px;">{{ $item->article }}</div>
+                                                <div style="font-weight: 600; margin-bottom: 4px;">
+                                                    {{ $item->article }}
+                                                </div>
                                                 @if($item->description)
                                                     <div style="font-size: 12px; color: #6c757d;">{{ Str::limit($item->description, 50) }}</div>
                                                 @endif
@@ -184,10 +179,11 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if($item->location)
-                                                    <div style="font-weight: 600; color: #495057;">
-                                                        {{ $item->location }}
-                                                    </div>
+                                                @if($item->responsibility_center)
+                                                    <span style="display:inline-flex;align-items:center;gap:5px;font-weight:600;color:#fff;background:#296218;padding:3px 10px;border-radius:20px;font-size:12px;">
+                                                        <i class="fas fa-sitemap" style="font-size:10px;"></i>
+                                                        {{ $item->responsibility_center }}
+                                                    </span>
                                                 @else
                                                     <span style="color: #6c757d; font-size: 12px;">Not specified</span>
                                                 @endif
@@ -234,8 +230,67 @@
                             
                             <!-- Pagination -->
                             @if($equipment->hasPages())
-                                <div class="pagination">
-                                    {{ $equipment->appends(request()->query())->links() }}
+                                <div class="pagination-wrapper">
+                                    <div class="pagination-info">
+                                        Showing {{ $equipment->firstItem() }} to {{ $equipment->lastItem() }} of {{ $equipment->total() }} results
+                                    </div>
+
+                                    <nav>
+                                        <ul class="pagination">
+                                            {{-- Previous Page Link --}}
+                                            @if ($equipment->onFirstPage())
+                                                <li class="disabled" aria-disabled="true">
+                                                    <span aria-hidden="true">
+                                                        <i class="fas fa-chevron-left"></i> Previous
+                                                    </span>
+                                                </li>
+                                            @else
+                                                <li>
+                                                    <a href="{{ $equipment->appends(request()->query())->previousPageUrl() }}" rel="prev">
+                                                        <i class="fas fa-chevron-left"></i> Previous
+                                                    </a>
+                                                </li>
+                                            @endif
+
+                                            {{-- Page Number Links --}}
+                                            @foreach ($equipment->appends(request()->query())->getUrlRange(1, $equipment->lastPage()) as $page => $url)
+                                                @if ($page == $equipment->currentPage())
+                                                    <li class="active" aria-current="page">
+                                                        <span>{{ $page }}</span>
+                                                    </li>
+                                                @else
+                                                    <li>
+                                                        <a href="{{ $url }}">{{ $page }}</a>
+                                                    </li>
+                                                @endif
+                                            @endforeach
+
+                                            {{-- Next Page Link --}}
+                                            @if ($equipment->hasMorePages())
+                                                <li>
+                                                    <a href="{{ $equipment->appends(request()->query())->nextPageUrl() }}" rel="next">
+                                                        Next <i class="fas fa-chevron-right"></i>
+                                                    </a>
+                                                </li>
+                                            @else
+                                                <li class="disabled" aria-disabled="true">
+                                                    <span aria-hidden="true">
+                                                        Next <i class="fas fa-chevron-right"></i>
+                                                    </span>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </nav>
+
+                                    <div class="items-per-page">
+                                        <label for="perPage">Show:</label>
+                                        <select id="perPage" onchange="changePerPage(this.value)">
+                                            <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
+                                            <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                            <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                            <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                                        </select>
+                                    </div>
                                 </div>
                             @endif
                         @else
@@ -292,6 +347,13 @@
                 window.location.href = url.toString();
             });
         });
+
+        function changePerPage(perPage) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('per_page', perPage);
+            url.searchParams.delete('page');
+            window.location.href = url.toString();
+        }
     </script>
 
     @include('layouts.core.footer')

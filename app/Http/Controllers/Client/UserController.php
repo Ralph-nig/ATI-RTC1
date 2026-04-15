@@ -57,38 +57,49 @@ class UserController extends Controller
         // Store the plain password before hashing
         $plainPassword = $validated['password'];
 
-        // If admin role, set all permissions to true
         if ($validated['role'] === 'admin') {
-            $validated['can_create'] = true;
-            $validated['can_read'] = true;
-            $validated['can_update'] = true;
-            $validated['can_delete'] = true;
-            $validated['can_stock_in'] = true;
+            // Admin gets all permissions
+            $validated['can_create']    = true;
+            $validated['can_read']      = true;
+            $validated['can_update']    = true;
+            $validated['can_delete']    = true;
+            $validated['can_stock_in']  = true;
             $validated['can_stock_out'] = true;
+            $validated['can_request']   = false;
+        } elseif ($validated['role'] === 'requestor') {
+            // Requestor only gets can_request; all other permissions locked off
+            $validated['can_create']    = false;
+            $validated['can_read']      = false;
+            $validated['can_update']    = false;
+            $validated['can_delete']    = false;
+            $validated['can_stock_in']  = false;
+            $validated['can_stock_out'] = false;
+            $validated['can_request']   = true;
         } else {
-            // For regular users, use submitted values or defaults
-            $validated['can_create'] = $request->boolean('can_create', false);
-            $validated['can_read'] = $request->boolean('can_read', true);
-            $validated['can_update'] = $request->boolean('can_update', false);
-            $validated['can_delete'] = $request->boolean('can_delete', false);
-            $validated['can_stock_in'] = $request->boolean('can_stock_in', false);
+            // Regular user — use submitted checkboxes
+            $validated['can_create']    = $request->boolean('can_create', false);
+            $validated['can_read']      = $request->boolean('can_read', true);
+            $validated['can_update']    = $request->boolean('can_update', false);
+            $validated['can_delete']    = $request->boolean('can_delete', false);
+            $validated['can_stock_in']  = $request->boolean('can_stock_in', false);
             $validated['can_stock_out'] = $request->boolean('can_stock_out', false);
+            $validated['can_request']   = false;
         }
 
         $validated['password'] = Hash::make($validated['password']);
-        $validated['status'] = $validated['status'] ?? 'active';
+        $validated['status']   = $validated['status'] ?? 'active';
 
         $user = User::create($validated);
 
         // Send credentials email
         try {
             Mail::to($user->email)->send(new UserCredentialMail($user, $plainPassword));
-            
+
             return redirect()->route('users.index')
                 ->with('success', 'User has been successfully created and credentials have been sent to their email!');
         } catch (\Exception $e) {
             Log::error('Failed to send credential email: ' . $e->getMessage());
-            
+
             return redirect()->route('users.index')
                 ->with('warning', 'User created successfully, but failed to send credentials email. Please share credentials manually.');
         }
@@ -118,38 +129,43 @@ class UserController extends Controller
     {
         $validated = $request->validated();
         $user = User::findOrFail($id);
-        
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
-        $user->role = $validated['role'];
+
+        $user->name   = $validated['name'];
+        $user->email  = $validated['email'];
+        $user->role   = $validated['role'];
         $user->status = $validated['status'] ?? 'active';
-        
-        // If admin role, set all permissions to true
+
         if ($validated['role'] === 'admin') {
-            $user->can_create = true;
-            $user->can_read = true;
-            $user->can_update = true;
-            $user->can_delete = true;
-            $user->can_stock_in = true;
+            $user->can_create    = true;
+            $user->can_read      = true;
+            $user->can_update    = true;
+            $user->can_delete    = true;
+            $user->can_stock_in  = true;
             $user->can_stock_out = true;
+            $user->can_request   = false;
+        } elseif ($validated['role'] === 'requestor') {
+            $user->can_create    = false;
+            $user->can_read      = false;
+            $user->can_update    = false;
+            $user->can_delete    = false;
+            $user->can_stock_in  = false;
+            $user->can_stock_out = false;
+            $user->can_request   = true;
         } else {
-            // For regular users, use submitted values
-            $user->can_create = $request->boolean('can_create', false);
-            $user->can_read = $request->boolean('can_read', true);
-            $user->can_update = $request->boolean('can_update', false);
-            $user->can_delete = $request->boolean('can_delete', false);
-            $user->can_stock_in = $request->boolean('can_stock_in', false);
+            $user->can_create    = $request->boolean('can_create', false);
+            $user->can_read      = $request->boolean('can_read', true);
+            $user->can_update    = $request->boolean('can_update', false);
+            $user->can_delete    = $request->boolean('can_delete', false);
+            $user->can_stock_in  = $request->boolean('can_stock_in', false);
             $user->can_stock_out = $request->boolean('can_stock_out', false);
+            $user->can_request   = false;
         }
-        
+
         // Only update password if provided
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
-            
-            // Optionally send email notification about password change
-            // You can create a separate email template for this
         }
-        
+
         $user->save();
 
         return redirect()->route('users.index')
@@ -162,14 +178,40 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         $user = User::findOrFail($id);
-        
+
         // Prevent admin from deleting their own account
         if ($user->id === auth()->user()->id) {
             return response()->json(['error' => 'You cannot delete your own account.'], 403);
         }
-        
+
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully.'], 200);
+    }
+
+    /**
+     * Display the organisational chart.
+     */
+    public function orgchart()
+    {
+        $data['user'] = User::all();
+        return view('client.users.orgchart', $data);
+    }
+
+    /**
+     * Get equipment assigned to a user (responsible_person matches user name).
+     */
+    public function getEquipment(string $id)
+    {
+        $user = User::findOrFail($id);
+
+        $equipment = \App\Models\Equipment::where('responsible_person', $user->name)
+            ->orderBy('article')
+            ->get([
+                'id', 'property_number', 'article', 'classification',
+                'condition', 'responsibility_center', 'unit_value', 'acquisition_date'
+            ]);
+
+        return response()->json(['equipment' => $equipment]);
     }
 }

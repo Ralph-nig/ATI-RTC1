@@ -456,13 +456,13 @@
     <!-- Logo, Title and Subtitle outside the container -->
     <div class="header-section">
         <div class="logo">
-            @if(file_exists(public_path('assets/img/atirtc1logo.jpg')))
-                <img src="{{ asset('assets/img/sample.png') }}" alt="{{ config('app.name', 'AGRISUPPLY') }}">
+            @if(file_exists(public_path('assets/img/.jpg')))
+                <img src="{{ asset('assets/img/sample.png') }}" alt="{{ config('app.name', 'ATI-RTC1') }}">
                 <a style="color: white">X</a>
-                <img src="{{ asset('assets/img/atirtc1logo.jpg') }}" alt="{{ config('app.name', 'AGRISUPPLY') }}">
+                <img src="{{ asset('assets/img/.jpg') }}" alt="{{ config('app.name', 'ATI-RTC1') }}">
             @else
                 <div class="logo-fallback">
-                    {{ substr(config('app.name', 'AGRISUPPLY'), 0, 2) }}
+                    {{ substr(config('app.name', 'ATI-RTC1'), 0, 2) }}
                 </div>
             @endif
         </div>

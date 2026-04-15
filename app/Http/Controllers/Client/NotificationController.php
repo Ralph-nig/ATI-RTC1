@@ -20,10 +20,30 @@ class NotificationController extends Controller
         $notification = Notification::where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
-        
+
         $notification->markAsRead();
-        
-        return response()->json(['success' => true]);
+
+        // Resolve redirect URL from notification data
+        $data        = $notification->data ?? [];
+        $type        = $notification->type;
+        $redirectUrl = url('/client/dashboard');
+
+        if (in_array($type, ['ris_request', 'ris_approved', 'ris_rejected'])) {
+            $risId = $data['ris_id'] ?? null;
+            if ($risId) {
+                $redirectUrl = route('client.ris.show', $risId);
+            }
+        } elseif (in_array($type, ['help_request', 'help_response'])) {
+            $helpId = $data['help_request_id'] ?? null;
+            if ($helpId) {
+                $redirectUrl = route('client.help.show', $helpId);
+            }
+        }
+
+        return response()->json([
+            'success'      => true,
+            'redirect_url' => $redirectUrl,
+        ]);
     }
 
     public function markAllAsRead()

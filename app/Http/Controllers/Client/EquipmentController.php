@@ -4,12 +4,44 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Equipment;
-use App\Models\DeletedEquipment;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 class EquipmentController extends Controller
 {
+    /**
+     * Return the next auto-generated document number for a given type (AJAX).
+     * GET /client/equipment/api/next-document-number?type=ICS
+     */
+    public function nextDocumentNumber(Request $request)
+    {
+        $type = strtoupper($request->get('type', 'ICS'));
+        if (!in_array($type, ['ICS', 'PAR'])) {
+            return response()->json(['error' => 'Invalid type'], 422);
+        }
+        return response()->json(['number' => Equipment::generateDocumentNumber($type)]);
+    }
+
+    /**
+     * Validate that the document type matches the unit value rule:
+     *   - ICS  → unit value must be BELOW ₱50,000
+     *   - PAR  → unit value must be ₱50,000 OR ABOVE
+     *
+     * Returns an error string, or null when valid.
+     */
+    private function checkDocumentTypeRule(string $docType, float $unitValue): ?string
+    {
+        if ($docType === 'ICS' && $unitValue >= 50000) {
+            return 'ICS cannot be used for items worth ₱50,000 or above. Please use PAR instead.';
+        }
+
+        if ($docType === 'PAR' && $unitValue < 50000) {
+            return 'PAR cannot be used for items below ₱50,000. Please use ICS instead.';
+        }
+
+        return null;
+    }
+
     /**
      * Display a listing of equipment
      */
@@ -28,8 +60,8 @@ class EquipmentController extends Controller
         }
 
         // Sorting
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
+        $sortBy        = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'asc');
         $query->orderBy($sortBy, $sortDirection);
 
         // Paginate results
@@ -42,17 +74,29 @@ class EquipmentController extends Controller
     }
 
     /**
+     * Show equipment assigned to the currently logged-in user.
+     */
+    public function myEquipment()
+    {
+        $myEquipment = Equipment::where('responsible_person', auth()->user()->name)
+            ->orderBy('article')
+            ->get();
+
+        return view('client.equipment.my-equipment', compact('myEquipment'));
+    }
+
+    /**
      * Show the form for creating new equipment
      */
     public function create()
     {
-        // Check permission
         if (!auth()->user()->hasPermission('create')) {
             return redirect()->route('client.equipment.index')
                 ->with('error', 'You do not have permission to create equipment.');
         }
 
-        return view('client.equipment.create');
+        $users = \App\Models\User::where('status', 'active')->orderBy('name')->get(['id', 'name']);
+        return view('client.equipment.create', compact('users'));
     }
 
     /**
@@ -60,33 +104,48 @@ class EquipmentController extends Controller
      */
     public function store(Request $request)
     {
-        // Check permission
         if (!auth()->user()->hasPermission('create')) {
             return redirect()->route('client.equipment.index')
                 ->with('error', 'You do not have permission to create equipment.');
         }
 
-        // UPDATED: Removed maintenance schedule fields from validation
+        // Strict ICS / PAR rule — block invalid combinations before field validation
+        $docType   = (string) $request->input('document_type', '');
+        $unitValue = (float)  $request->input('unit_value', 0);
+
+        $docTypeError = $this->checkDocumentTypeRule($docType, $unitValue);
+        if ($docTypeError) {
+            return back()->withInput()->withErrors([
+                'document_type' => $docTypeError,
+            ]);
+        }
+
         $validated = $request->validate([
-            'property_number' => 'required|string|max:255|unique:equipment,property_number',
-            'article' => 'required|string|max:255',
-            'classification' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'unit_of_measurement' => 'required|string|max:50',
-            'unit_value' => 'required|numeric|min:0',
-            'condition' => 'required|in:Serviceable,Unserviceable',
-            'disposal_method' => 'required_if:condition,Unserviceable|nullable|in:Sale,Transfer,Destruction,Others',
-            'disposal_details' => 'required_if:disposal_method,Others|nullable|string|max:255',
-            'acquisition_date' => 'nullable|date',
-            'location' => 'nullable|string|max:255',
-            'responsible_person' => 'nullable|string|max:255',
-            'remarks' => 'nullable|string'
+            'document_type'         => 'required|in:ICS,PAR',
+            'document_number'       => 'required|string|max:50|unique:equipment,document_number',
+            'property_number'       => 'required|string|max:255|unique:equipment,property_number',
+            'article'               => 'required|string|max:255',
+            'classification'        => 'nullable|string|max:255',
+            'description'           => 'nullable|string',
+            'unit_of_measurement'   => 'required|string|max:50',
+            'unit_value'            => 'required|numeric|min:0',
+            'quantity'              => 'required|integer|min:1|max:9999',
+            'condition'             => 'required|in:Serviceable,Unserviceable',
+            'disposal_method'       => 'required_if:condition,Unserviceable|nullable|in:sale,transfer,destruction,others',
+            'disposal_details'      => 'required_if:disposal_method,others|nullable|string|max:255|exclude_unless:disposal_method,others',
+            'acquisition_date'      => 'nullable|date',
+            'location'              => 'nullable|string|max:255',
+            'responsibility_center' => 'nullable|in:ISS,AFU,CDMS,PAS,PMEU,OCD,DORM',
+            'responsible_person'    => 'nullable|string|max:255',
+            'remarks'               => 'nullable|string',
         ], [
-            'disposal_method.required_if' => 'The disposal method field is required when condition is unserviceable.',
+            'document_type.required'       => 'Please select a document type (ICS or PAR).',
+            'document_number.required'     => 'Document number is required.',
+            'document_number.unique'       => 'This document number is already in use.',
+            'disposal_method.required_if'  => 'The disposal method field is required when condition is Unserviceable.',
             'disposal_details.required_if' => 'Please specify the disposal details when selecting "Others".',
         ]);
 
-        // Create equipment - maintenance schedule is auto-set in the model's boot method
         Equipment::create($validated);
 
         return redirect()->route('client.equipment.index')
@@ -98,13 +157,12 @@ class EquipmentController extends Controller
      */
     public function show($id)
     {
-        // Check permission
         if (!auth()->user()->hasPermission('read')) {
             return redirect()->route('client.equipment.index')
                 ->with('error', 'You do not have permission to view equipment.');
         }
 
-        $equipment = Equipment::with(['maintenanceLogs', 'activeWarnings'])->findOrFail($id);
+        $equipment = Equipment::findOrFail($id);
         return view('client.equipment.view', compact('equipment'));
     }
 
@@ -113,15 +171,15 @@ class EquipmentController extends Controller
      */
     public function edit($id)
     {
-        // Check permission
         if (!auth()->user()->hasPermission('update')) {
             return redirect()->route('client.equipment.index')
                 ->with('error', 'You do not have permission to edit equipment.');
         }
 
         $equipment = Equipment::findOrFail($id);
+        $users     = \App\Models\User::where('status', 'active')->orderBy('name')->get(['id', 'name']);
 
-        return view('client.equipment.edit', compact('equipment'));
+        return view('client.equipment.edit', compact('equipment', 'users'));
     }
 
     /**
@@ -129,7 +187,6 @@ class EquipmentController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Check permission
         if (!auth()->user()->hasPermission('update')) {
             return redirect()->route('client.equipment.index')
                 ->with('error', 'You do not have permission to update equipment.');
@@ -137,23 +194,40 @@ class EquipmentController extends Controller
 
         $equipment = Equipment::findOrFail($id);
 
-        // UPDATED: Removed maintenance schedule fields from validation
+        // Strict ICS / PAR rule — block invalid combinations before field validation
+        $docType   = (string) $request->input('document_type', '');
+        $unitValue = (float)  $request->input('unit_value', 0);
+
+        $docTypeError = $this->checkDocumentTypeRule($docType, $unitValue);
+        if ($docTypeError) {
+            return back()->withInput()->withErrors([
+                'document_type' => $docTypeError,
+            ]);
+        }
+
         $validated = $request->validate([
-            'property_number' => 'required|string|max:255|unique:equipment,property_number,' . $id,
-            'article' => 'required|string|max:255',
-            'classification' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'unit_of_measurement' => 'required|string|max:50',
-            'unit_value' => 'required|numeric|min:0',
-            'condition' => 'required|in:Serviceable,Unserviceable',
-            'disposal_method' => 'required_if:condition,Unserviceable|nullable|in:Sale,Transfer,Destruction,Others',
-            'disposal_details' => 'required_if:disposal_method,Others|nullable|string|max:255',
-            'acquisition_date' => 'nullable|date',
-            'location' => 'nullable|string|max:255',
-            'responsible_person' => 'nullable|string|max:255',
-            'remarks' => 'nullable|string'
+            'document_type'         => 'required|in:ICS,PAR',
+            'document_number'       => 'required|string|max:50|unique:equipment,document_number,' . $id,
+            'property_number'       => 'required|string|max:255|unique:equipment,property_number,' . $id,
+            'article'               => 'required|string|max:255',
+            'classification'        => 'nullable|string|max:255',
+            'description'           => 'nullable|string',
+            'unit_of_measurement'   => 'required|string|max:50',
+            'unit_value'            => 'required|numeric|min:0',
+            'quantity'              => 'required|integer|min:1|max:9999',
+            'condition'             => 'required|in:Serviceable,Unserviceable',
+            'disposal_method'       => 'required_if:condition,Unserviceable|nullable|in:sale,transfer,destruction,others',
+            'disposal_details'      => 'required_if:disposal_method,others|nullable|string|max:255|exclude_unless:disposal_method,others',
+            'acquisition_date'      => 'nullable|date',
+            'location'              => 'nullable|string|max:255',
+            'responsibility_center' => 'nullable|in:ISS,AFU,CDMS,PAS,PMEU,OCD,DORM',
+            'responsible_person'    => 'nullable|string|max:255',
+            'remarks'               => 'nullable|string',
         ], [
-            'disposal_method.required_if' => 'The disposal method field is required when condition is unserviceable.',
+            'document_type.required'       => 'Please select a document type (ICS or PAR).',
+            'document_number.required'     => 'Document number is required.',
+            'document_number.unique'       => 'This document number is already in use.',
+            'disposal_method.required_if'  => 'The disposal method field is required when condition is Unserviceable.',
             'disposal_details.required_if' => 'Please specify the disposal details when selecting "Others".',
         ]);
 
@@ -174,51 +248,24 @@ class EquipmentController extends Controller
         }
 
         $equipment = Equipment::findOrFail($id);
-
-        // Save to deleted_equipment table
-        DeletedEquipment::create([
-            'user_id' => auth()->id(),
-            'equipment_id' => $equipment->id,
-            'property_number' => $equipment->property_number,
-            'article' => $equipment->article,
-            'classification' => $equipment->classification,
-            'description' => $equipment->description,
-            'unit_of_measurement' => $equipment->unit_of_measurement,
-            'unit_value' => $equipment->unit_value,
-            'condition' => $equipment->condition,
-            'disposal_method' => $equipment->disposal_method,
-            'disposal_details' => $equipment->disposal_details,
-            'acquisition_date' => $equipment->acquisition_date,
-            'location' => $equipment->location,
-            'responsible_person' => $equipment->responsible_person,
-            'remarks' => $equipment->remarks,
-            'reason' => request('reason'),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent()
-        ]);
-
-        // Use forceDelete() instead of delete() to permanently remove
         $equipment->forceDelete();
 
         return redirect()->route('client.equipment.index')
             ->with('success', 'Equipment deleted successfully!');
     }
-    
+
     /**
      * Export equipment to Excel
      */
     public function export(Request $request)
     {
-        // Check permission
         if (!auth()->user()->hasPermission('read')) {
             return redirect()->route('client.equipment.index')
                 ->with('error', 'You do not have permission to export equipment.');
         }
 
-        // Get the same query as the index method
         $query = Equipment::query();
 
-        // Apply the same filters as the index method
         if ($request->has('search') && $request->search) {
             $query->search($request->search);
         }
@@ -227,44 +274,38 @@ class EquipmentController extends Controller
             $query->byCondition($request->condition);
         }
 
-        // Apply the same sorting as the index method
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy        = $request->get('sort_by', 'created_at');
         $sortDirection = $request->get('sort_direction', 'desc');
         $query->orderBy($sortBy, $sortDirection);
 
-        // Export only current page data (progressive export)
-        $perPage = 10;
+        $perPage     = 10;
         $currentPage = $request->get('page', 1);
-        $offset = ($currentPage - 1) * $perPage;
-        $equipment = $query->skip($offset)->take($perPage)->get();
+        $offset      = ($currentPage - 1) * $perPage;
+        $equipment   = $query->skip($offset)->take($perPage)->get();
 
-        $data = [];
-
-        // Header row for equipment details
+        $data   = [];
         $data[] = [
-            'Property Number', 
-            'Article', 
-            'Classification', 
-            'Description', 
-            'Unit of Measurement', 
-            'Unit Value', 
-            'Condition', 
+            'Property Number',
+            'Article',
+            'Qty',
+            'Classification',
+            'Description',
+            'Unit of Measurement',
+            'Unit Value',
+            'Condition',
             'Disposal Method',
             'Disposal Details',
             'Acquisition Date',
-            'Maintenance Start',
-            'Maintenance Deadline',
-            'Maintenance Status',
-            'Location', 
-            'Responsible Person', 
-            'Remarks'
+            'Responsibility Center',
+            'Responsible Person',
+            'Remarks',
         ];
 
-        // Add equipment data
         foreach ($equipment as $item) {
             $data[] = [
                 $item->property_number,
                 $item->article,
+                $item->quantity ?? 1,
                 $item->classification ?: 'N/A',
                 $item->description ?: 'N/A',
                 $item->unit_of_measurement,
@@ -273,53 +314,51 @@ class EquipmentController extends Controller
                 $item->disposal_method ?: 'N/A',
                 $item->disposal_details ?: 'N/A',
                 $item->acquisition_date ? $item->acquisition_date->format('F d, Y') : 'N/A',
-                $item->maintenance_schedule_start ? $item->maintenance_schedule_start->format('F d, Y') : 'N/A',
-                $item->maintenance_schedule_end ? $item->maintenance_schedule_end->format('F d, Y') : 'N/A',
-                $item->maintenance_status ?: 'N/A',
-                $item->location ?: 'N/A',
+                $item->responsibility_center ?: 'N/A',
                 $item->responsible_person ?: 'N/A',
-                $item->remarks ?: 'N/A'
+                $item->remarks ?: 'N/A',
             ];
         }
 
-        return Excel::download(new class($data) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithEvents {
-            protected $data;
+        return Excel::download(
+            new class($data) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithEvents {
+                protected $data;
 
-            public function __construct($data)
-            {
-                $this->data = $data;
-            }
+                public function __construct($data)
+                {
+                    $this->data = $data;
+                }
 
-            public function array(): array
-            {
-                return $this->data;
-            }
+                public function array(): array
+                {
+                    return $this->data;
+                }
 
-            public function registerEvents(): array
-            {
-                return [
-                    \Maatwebsite\Excel\Events\AfterSheet::class => function (\Maatwebsite\Excel\Events\AfterSheet $event) {
-                        $sheet = $event->sheet->getDelegate();
-                        $sheet->getColumnDimension('A')->setWidth(15);
-                        $sheet->getColumnDimension('B')->setWidth(20);
-                        $sheet->getColumnDimension('C')->setWidth(15);
-                        $sheet->getColumnDimension('D')->setWidth(30);
-                        $sheet->getColumnDimension('E')->setWidth(15);
-                        $sheet->getColumnDimension('F')->setWidth(12);
-                        $sheet->getColumnDimension('G')->setWidth(12);
-                        $sheet->getColumnDimension('H')->setWidth(15);
-                        $sheet->getColumnDimension('I')->setWidth(20);
-                        $sheet->getColumnDimension('J')->setWidth(15);
-                        $sheet->getColumnDimension('K')->setWidth(15);
-                        $sheet->getColumnDimension('L')->setWidth(18);
-                        $sheet->getColumnDimension('M')->setWidth(15);
-                        $sheet->getColumnDimension('N')->setWidth(20);
-                        $sheet->getColumnDimension('O')->setWidth(20);
-                        $sheet->getColumnDimension('P')->setWidth(30);
-                    }
-                ];
-            }
-        }, 'equipment_list.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+                public function registerEvents(): array
+                {
+                    return [
+                        \Maatwebsite\Excel\Events\AfterSheet::class => function (\Maatwebsite\Excel\Events\AfterSheet $event) {
+                            $sheet = $event->sheet->getDelegate();
+                            $sheet->getColumnDimension('A')->setWidth(15);
+                            $sheet->getColumnDimension('B')->setWidth(20);
+                            $sheet->getColumnDimension('C')->setWidth(15);
+                            $sheet->getColumnDimension('D')->setWidth(30);
+                            $sheet->getColumnDimension('E')->setWidth(15);
+                            $sheet->getColumnDimension('F')->setWidth(12);
+                            $sheet->getColumnDimension('G')->setWidth(12);
+                            $sheet->getColumnDimension('H')->setWidth(15);
+                            $sheet->getColumnDimension('I')->setWidth(20);
+                            $sheet->getColumnDimension('J')->setWidth(15);
+                            $sheet->getColumnDimension('K')->setWidth(20);
+                            $sheet->getColumnDimension('L')->setWidth(20);
+                            $sheet->getColumnDimension('M')->setWidth(30);
+                        },
+                    ];
+                }
+            },
+            'equipment_list.xlsx',
+            \Maatwebsite\Excel\Excel::XLSX
+        );
     }
 
     /**

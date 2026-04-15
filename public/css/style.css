@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
 * {
     font-family: "Inter", sans-serif;
@@ -8,6 +9,8 @@
 }
 
 :root {
+    --sidebar-width: 300px;
+    --sidebar-collapsed-width: 72px;
     --sidebar-bg: #ffffff;
     --sidebar-border: #e5e7eb;
     --text-primary: #1f2937;
@@ -21,7 +24,10 @@
 
 body {
     min-height: 100vh;
-    overflow-x: hidden;
+    /* NOTE: overflow-x: hidden has been intentionally removed.
+       It was clipping the fixed-position sidebar toggle button.
+       If you need to prevent horizontal scroll, add it only to
+       .details or a specific content wrapper instead. */
 }
 
 .container {
@@ -29,19 +35,22 @@ body {
     width: 100%;
 }
 
-/* SIDEBAR STYLES */
+/* ============================================
+   SIDEBAR
+   ============================================ */
 .navigation {
     position: fixed;
     top: 0;
-    width: 300px;
+    left: 0;
+    width: var(--sidebar-width);
     height: 100vh;
     background: var(--sidebar-bg);
     border-right: 2px solid var(--sidebar-border);
-    transition: 0.3s ease;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: visible; /* tooltips must not be clipped */
     z-index: 1000;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .navigation ul {
@@ -59,25 +68,37 @@ body {
     border-radius: 8px;
 }
 
-/* Brand/Logo styling */
-.navigation ul li:nth-child(1) {
-    margin-bottom: 32px;
+/* Brand / logo item */
+.navigation > ul > li:nth-child(1) {
     margin: 0 0 32px 0;
     pointer-events: none;
     border-radius: 0;
 }
 
-.navigation ul li:nth-child(1) a {
-    padding: 24px 20px;
+.navigation > ul > li:nth-child(1) > a {
+    padding: 16px 20px;
     border-bottom: 1px solid var(--sidebar-border);
     margin: 0;
     border-radius: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 80px;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .navigation ul li:nth-child(1) a .title {
     font-size: 24px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #296218;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    font-family: 'Poppins', sans-serif;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .navigation ul li:nth-child(1) a .icon {
@@ -93,7 +114,7 @@ body {
     font-size: 20px;
 }
 
-/* Regular navigation items */
+/* Nav links */
 .navigation ul li a {
     position: relative;
     display: flex;
@@ -103,8 +124,10 @@ body {
     color: var(--text-secondary);
     padding: 12px 16px;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
     margin: 0 12px;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .navigation ul li a:hover {
@@ -112,12 +135,12 @@ body {
     color: var(--text-primary);
 }
 
-.navigation ul li.hovered a {
+.navigation ul li.hovered > a {
     background: var(--active-bg);
     color: var(--active-text);
 }
 
-.navigation ul li.hovered a:hover {
+.navigation ul li.hovered > a:hover {
     background: var(--accent-hover);
     color: var(--active-text);
 }
@@ -130,6 +153,8 @@ body {
     min-width: 20px;
     height: 20px;
     margin-right: 12px;
+    flex-shrink: 0;
+    transition: margin 0.3s ease;
 }
 
 .navigation ul li a .icon ion-icon {
@@ -143,66 +168,49 @@ body {
     font-weight: 500;
     white-space: nowrap;
     line-height: 1.5;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+    overflow: hidden;
 }
 
-/* Main content area */
+/* Main content */
 .details {
     position: relative;
-    width: calc(100% - 300px); /* Changed from 280px to 300px */
-    left: 300px; /* Changed from 280px to 300px */
+    width: calc(100% - var(--sidebar-width));
+    left: var(--sidebar-width);
     min-height: 100vh;
     background: #f5f5f5;
-    transition: 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                left  0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 20px;
-}
-
-/* Optional: Add section grouping */
-.nav-section {
-    margin-bottom: 24px;
-}
-
-.nav-section-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0 16px 8px;
-    margin-top: 16px;
+    overflow-x: hidden; /* contain horizontal scroll here instead of body */
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .navigation {
-        transform: translateX(-100%);
-    }
-    
-    .details {
-        width: 100%;
-        left: 0;
-    }
+    .navigation { transform: translateX(-100%); }
+    .details    { width: 100%; left: 0; }
 }
 
+/* Brand logo */
 .brand-logo {
     width: 50px;
     height: 50px;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 50%;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    background: white;
-    padding: 2px;
+    border: none;
+    background: transparent;
+    padding: 0;
+    display: block;
+    margin: 0;
+    flex-shrink: 0;
 }
 
 .brand-container {
-    background: transparent;
-    border-radius: 50%;
-    color: white;
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
+    background: transparent;
 }
 
 .navigation ul li:nth-child(1) a .brand-container {
@@ -215,14 +223,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
-/* Dropdown container */
-.navigation ul li.dropdown {
-    position: relative;
-}
+/* ============================================
+   DROPDOWN
+   ============================================ */
+.navigation ul li.dropdown { position: relative; }
 
-/* Dropdown menu */
 .navigation ul li.dropdown .dropdown-menu {
     position: relative;
     max-height: 0;
@@ -231,43 +239,30 @@ body {
     transition: max-height 0.3s ease, padding 0.3s ease;
     margin: 0;
     padding: 0;
-    margin-left: 0; 
-    margin-top: 2px; 
-}
-
-/* Show dropdown when open */
-.navigation ul li.dropdown.open .dropdown-menu {
-    max-height: 200px; 
-    padding: 8px 0;
-}
-
-.dropdown-arrow {
-    margin-left: auto;
-    transition: transform 0.3s ease;
-}
-
-.navigation ul li.dropdown.open .dropdown-arrow {
-    transform: rotate(180deg);
-}
-
-.navigation ul li.dropdown .dropdown-menu {
+    margin-top: 1px;
     list-style: none;
     padding-left: 0;
+    z-index: 10;
+}
+
+.navigation ul li.dropdown.open .dropdown-menu {
+    max-height: 200px;
+    padding: 8px 0;
 }
 
 .navigation ul li.dropdown .dropdown-menu li {
     width: calc(100% - 24px);
-    margin: 3px 12px;
+    margin: 2px 12px;
     border-radius: 8px;
     position: relative;
     z-index: 1;
+    background: transparent !important;
 }
 
 .navigation ul li.dropdown .dropdown-menu li a {
-    padding: 12px 16px; 
-    padding-left: 48px; 
-    font-size: 14px; 
-    font-weight: 500; 
+    padding: 10px 16px 10px 48px;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-secondary);
     border-radius: 8px;
     margin: 0;
@@ -280,51 +275,54 @@ body {
     cursor: pointer;
     z-index: 2;
     pointer-events: auto;
+    min-height: unset;
+    height: auto;
 }
 
-/* Hover states for dropdown items */
 .navigation ul li.dropdown .dropdown-menu li a:hover {
     background: var(--hover-bg);
     color: var(--text-primary);
 }
 
-.navigation ul li.dropdown .dropdown-menu li a:hover .icon {
-    color: var(--text-primary);
-}
-
+.navigation ul li.dropdown .dropdown-menu li.active a,
 .navigation ul li.dropdown .dropdown-menu li.hovered a {
-    background: var(--active-bg);
-    color: var(--active-text);
+    background: var(--active-bg) !important;
+    color: var(--active-text) !important;
 }
 
+.navigation ul li.dropdown .dropdown-menu li.active a .icon,
 .navigation ul li.dropdown .dropdown-menu li.hovered a .icon {
-    color: var(--active-text);
+    color: var(--active-text) !important;
 }
 
+.navigation ul li.dropdown .dropdown-menu li.active a .title,
+.navigation ul li.dropdown .dropdown-menu li.hovered a .title {
+    color: var(--active-text) !important;
+    font-size: 14px !important;
+}
+
+.navigation ul li.dropdown .dropdown-menu li.active a:hover,
 .navigation ul li.dropdown .dropdown-menu li.hovered a:hover {
-    background: var(--accent-hover);
-    color: var(--active-text);
+    background: var(--accent-hover) !important;
+    color: var(--active-text) !important;
 }
 
-/* Parent dropdown item when open */
 .navigation ul li.dropdown.open > a,
 .navigation ul li.dropdown.active > a {
     background: var(--active-bg) !important;
     color: var(--active-text) !important;
 }
 
-/* Make Generate Cards text white when active */
-.navigation ul li.dropdown.active > a .title {
+.navigation ul li.dropdown.active > a .title,
+.navigation ul li.dropdown.hovered.open > a .title {
     color: var(--active-text);
 }
 
-/* Keep the hovered state for active dropdown parent */
 .navigation ul li.dropdown.hovered.open > a {
     background: var(--active-bg);
     color: var(--active-text);
 }
 
-/* Icon styling for dropdown items */
 .navigation ul li.dropdown .dropdown-menu li a .icon {
     min-width: 20px;
     height: 20px;
@@ -332,14 +330,15 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent; 
-    border-radius: 0; 
-    color: inherit; 
+    background: transparent;
+    border-radius: 0;
+    color: inherit;
+    flex-shrink: 0;
 }
 
 .navigation ul li.dropdown .dropdown-menu li a .icon ion-icon {
     font-size: 20px;
-    color: inherit; 
+    color: inherit;
 }
 
 .navigation ul li.dropdown .dropdown-menu li a .title {
@@ -349,32 +348,107 @@ body {
     line-height: 1.5;
 }
 
-/* Ensure dropdown items are not blocked by other elements */
-.navigation ul li.dropdown .dropdown-menu {
-    z-index: 10;
+.navigation ul li.dropdown .dropdown-menu li:first-child { margin-top: 2px; }
+.navigation ul li.dropdown .dropdown-menu li:last-child  { margin-bottom: 2px; }
+
+.navigation ul li.dropdown .dropdown-menu li:nth-child(1) a {
+    border-bottom: none;
+    padding: 10px 16px 10px 48px;
+    min-height: unset;
+    margin: 0;
+    border-radius: 8px;
 }
 
-/* Ensure active dropdown menu items have white text */
-.navigation ul li.dropdown .dropdown-menu li.active a .title {
-    color: var(--active-text);
+/* ============================================
+   COLLAPSED STATE
+   ============================================ */
+.navigation.collapsed {
+    width: var(--sidebar-collapsed-width);
+    overflow: visible; /* allow tooltips to show outside sidebar bounds */
 }
 
-/* Fix any potential overlay issues */
-.navigation ul li.dropdown .dropdown-menu li:first-child {
-    margin-top: 4px;
+/* Re-contain the scroll to just the ul, not the nav itself */
+.navigation.collapsed > ul {
+    overflow-y: auto;
+    overflow-x: visible;
+    max-height: 100vh;
 }
 
-.navigation ul li.dropdown .dropdown-menu li:last-child {
-    margin-bottom: 4px;
+.navigation.collapsed ul li a .title,
+.navigation.collapsed > ul > li:nth-child(1) > a .title {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
 
-/* Modal Styles */
+.navigation.collapsed .dropdown-menu {
+    display: none !important;
+}
+
+.navigation.collapsed ul li a {
+    justify-content: center;
+    padding: 12px 0;
+    margin: 0 8px;
+    width: calc(100% - 16px);
+}
+
+.navigation.collapsed ul li a .icon {
+    margin-right: 0;
+}
+
+.navigation.collapsed > ul > li:nth-child(1) > a {
+    justify-content: center;
+    padding: 14px 0;
+    gap: 0;
+}
+
+/* ============================================
+   TOOLTIPS (icon-only collapsed mode)
+   ============================================ */
+
+/* Each li is the anchor for its own tooltip */
+.navigation.collapsed ul li {
+    position: relative;
+    overflow: visible;
+}
+
+.navigation.collapsed ul li > a[data-title]::after {
+    content: attr(data-title);
+    position: absolute;
+    left: calc(100% + 10px); /* right of the sidebar item */
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1f2937;
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.navigation.collapsed ul li > a[data-title]:hover::after {
+    opacity: 1;
+}
+
+/* No tooltip for the brand/logo item */
+.navigation.collapsed > ul > li:nth-child(1) > a::after {
+    display: none;
+}
+
+/* ============================================
+   MODAL STYLES
+   ============================================ */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
@@ -394,14 +468,8 @@ body {
 }
 
 @keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 .modal-header {
@@ -415,11 +483,7 @@ body {
     border-radius: 12px 12px 0 0;
 }
 
-.modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-}
+.modal-header h2 { margin: 0; font-size: 20px; font-weight: 600; }
 
 .modal-close {
     font-size: 28px;
@@ -427,10 +491,7 @@ body {
     line-height: 1;
     transition: opacity 0.2s ease;
 }
-
-.modal-close:hover {
-    opacity: 0.7;
-}
+.modal-close:hover { opacity: 0.7; }
 
 .modal-body {
     padding: 24px;
@@ -446,21 +507,40 @@ body {
     padding: 16px;
     transition: box-shadow 0.2s ease;
 }
+.about-box:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+.about-box h3 { margin: 0 0 12px 0; color: var(--accent); font-size: 16px; font-weight: 600; }
+.about-box p  { margin: 0; color: var(--text-primary); line-height: 1.6; font-size: 14px; }
 
-.about-box:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+/* ============================================
+   LOGOS
+   ============================================ */
+.bagong-logo {
+    width: 45px; height: 45px;
+    object-fit: contain; border-radius: 50%;
+    background: transparent; mix-blend-mode: multiply;
+    border: none; padding: 0;
 }
 
-.about-box h3 {
-    margin: 0 0 12px 0;
-    color: var(--accent);
-    font-size: 16px;
+.aimms-logo {
+    width: 50px; height: 50px;
+    object-fit: contain; border-radius: 50%;
+    background: transparent; border: none; padding: 0;
+}
+
+.user-profile {
+    display: flex;
+    text-decoration: none;
+    color: inherit;
+}
+
+.nav-section { margin-bottom: 24px; }
+
+.nav-section-title {
+    font-size: 11px;
     font-weight: 600;
-}
-
-.about-box p {
-    margin: 0;
-    color: var(--text-primary);
-    line-height: 1.6;
-    font-size: 14px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 16px 8px;
+    margin-top: 16px;
 }

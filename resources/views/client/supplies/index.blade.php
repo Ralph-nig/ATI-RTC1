@@ -68,13 +68,13 @@
                                     Deleted History
                                 </a>
                             @endif
-                            {{-- Only show Export if user can read --}}
+                            <!-- {{-- Only show Export if user can read --}}
                             @if(auth()->user()->hasPermission('read'))
                                 <a href="{{ route('supplies.export') }}" class="btn btn-primary">
                                     <i class="fas fa-download"></i>
                                     Export
                                 </a>
-                            @endif
+                            @endif -->
                         </div>
                     </div>
                 </div>
@@ -253,7 +253,7 @@
                                             @endif
 
                                             {{-- Pagination Elements --}}
-                                            @foreach ($supplies->links()->elements[0] as $page => $url)
+                                            @foreach ($supplies->getUrlRange(1, $supplies->lastPage()) as $page => $url)
                                                 @if ($page == $supplies->currentPage())
                                                     <li class="active" aria-current="page">
                                                         <span>{{ $page }}</span>
@@ -300,7 +300,7 @@
                                 <p>Get started by adding your first supply item.</p>
                                 @if(auth()->user()->hasPermission('create'))
                                     <a href="{{ route('supplies.create') }}" class="btn btn-success">
-                                        <i class="fas fa-plus"></i>
+                                        <i class="fas fa-plus">+</i>
                                         Add Your First Item
                                     </a>
                                 @endif

@@ -14,14 +14,13 @@ class HelpController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         if ($user->isAdmin()) {
-            // Admin sees all help requests
             $helpRequests = HelpRequest::with(['user', 'assignedTo'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            // Users see only their own help requests
+            // Both regular users AND requestors see their own requests
             $helpRequests = HelpRequest::where('user_id', $user->id)
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -157,8 +156,7 @@ class HelpController extends Controller
     public function destroy($id)
     {
         $helpRequest = HelpRequest::findOrFail($id);
-        
-        // Only admins or the original user can delete (when status is pending)
+
         if (!Auth::user()->isAdmin() && ($helpRequest->user_id !== Auth::id() || $helpRequest->status !== 'pending')) {
             abort(403);
         }
@@ -166,5 +164,85 @@ class HelpController extends Controller
         $helpRequest->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Admin approves a help request.
+     */
+    public function approve(Request $request, $id)
+    {
+        if (!Auth::user()->isAdmin()) abort(403);
+
+        $request->validate([
+            'admin_response' => 'nullable|string|max:2000',
+            'assigned_to'    => 'nullable|exists:users,id',
+        ]);
+
+        $helpRequest = HelpRequest::findOrFail($id);
+
+        if ($helpRequest->status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'Request is no longer pending.'], 400);
+        }
+
+        $helpRequest->update([
+            'status'         => 'in_progress',
+            'admin_response' => $request->admin_response,
+            'assigned_to'    => $request->assigned_to ?? Auth::id(),
+            'resolved_at'    => null,
+        ]);
+
+        Notification::create([
+            'user_id' => $helpRequest->user_id,
+            'type'    => 'help_response',
+            'title'   => 'Help Request Approved',
+            'message' => 'Your request "' . $helpRequest->subject . '" has been approved and is now in progress.'
+                       . ($request->admin_response ? ' Note: ' . $request->admin_response : ''),
+            'data'    => [
+                'help_request_id' => $helpRequest->id,
+                'status'          => 'in_progress',
+                'admin_name'      => Auth::user()->name,
+            ],
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Request approved successfully.']);
+    }
+
+    /**
+     * Admin rejects a help request.
+     */
+    public function reject(Request $request, $id)
+    {
+        if (!Auth::user()->isAdmin()) abort(403);
+
+        $request->validate([
+            'admin_response' => 'nullable|string|max:2000',
+        ]);
+
+        $helpRequest = HelpRequest::findOrFail($id);
+
+        if ($helpRequest->status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'Request is no longer pending.'], 400);
+        }
+
+        $helpRequest->update([
+            'status'         => 'closed',
+            'admin_response' => $request->admin_response,
+            'resolved_at'    => now(),
+        ]);
+
+        Notification::create([
+            'user_id' => $helpRequest->user_id,
+            'type'    => 'help_response',
+            'title'   => 'Help Request Rejected',
+            'message' => 'Your request "' . $helpRequest->subject . '" has been rejected.'
+                       . ($request->admin_response ? ' Reason: ' . $request->admin_response : ''),
+            'data'    => [
+                'help_request_id' => $helpRequest->id,
+                'status'          => 'closed',
+                'admin_name'      => Auth::user()->name,
+            ],
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Request rejected.']);
     }
 }

@@ -73,6 +73,9 @@ class ForgotPasswordController extends Controller
         if (!session('email')) {
             return redirect()->route('password.request');
         }
+
+        // Keep the email in session for the next request
+        session()->keep(['email']);
         
         return view('auth.verify-code');
     }
@@ -92,28 +95,26 @@ class ForgotPasswordController extends Controller
             ->first();
 
         if (!$resetRecord) {
-            return back()->with('error', 'Invalid or expired verification code.');
+            return back()
+                ->with('error', 'Invalid or expired verification code.')
+                ->with('email', $request->email);
         }
 
         // Check if code is expired (15 minutes)
         if (Carbon::parse($resetRecord->created_at)->addMinutes(15)->isPast()) {
             DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-            return back()->with('error', 'Verification code has expired. Please request a new one.');
+            return back()
+                ->with('error', 'Verification code has expired. Please request a new one.')
+                ->with('email', $request->email);
         }
 
         // Verify code
-        $codes = [$request->code];
-        $isValid = false;
-        
-        foreach ($codes as $code) {
-            if (Hash::check($code, $resetRecord->token)) {
-                $isValid = true;
-                break;
-            }
-        }
+        $isValid = Hash::check($request->code, $resetRecord->token);
 
         if (!$isValid) {
-            return back()->with('error', 'Invalid verification code.');
+            return back()
+                ->with('error', 'Invalid verification code.')
+                ->with('email', $request->email);
         }
 
         // Code is valid, redirect to reset password form
@@ -130,6 +131,9 @@ class ForgotPasswordController extends Controller
         if (!session('email') || !session('verified')) {
             return redirect()->route('password.request');
         }
+
+        // Keep the email and verified in session for the next request
+        session()->keep(['email', 'verified']);
         
         return view('auth.reset-password');
     }
@@ -188,9 +192,13 @@ class ForgotPasswordController extends Controller
         try {
             Mail::to($user->email)->send(new PasswordResetCodeMail($user, $code));
             
-            return back()->with('success', 'A new verification code has been sent to your email!');
+            return back()
+                ->with('success', 'A new verification code has been sent to your email!')
+                ->with('email', $request->email);
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to send verification code. Please try again.');
+            return back()
+                ->with('error', 'Failed to send verification code. Please try again.')
+                ->with('email', $request->email);
         }
     }
 }

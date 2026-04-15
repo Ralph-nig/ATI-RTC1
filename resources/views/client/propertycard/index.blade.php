@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Property Card</title>
+    <title>Property</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/supplies.css') }}">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -23,14 +23,14 @@
                 <div class="supplies-header">
                     <h1 class="supplies-title">
                         <i class="fas fa-file-alt"></i>
-                        Property Card
+                        Property
                     </h1>
                     
                     <!-- Controls Row -->
                     <div class="controls-row">
                         <div class="search-filter-group">
                             <div class="search-box">
-                                <i class="fas fa-search"></i>
+                                <i class="fas fa-search"></i>   
                                 <input type="text" placeholder="Search by article, description, or property number" 
                                        value="{{ request('search') }}" id="searchInput">
                             </div>
@@ -47,10 +47,10 @@
                         </div>
                         
                         <div class="action-buttons">
-                            <a href="{{ route('equipment.export', request()->query()) }}" class="btn btn-primary">
+                            <!-- <a href="{{ route('equipment.export', request()->query()) }}" class="btn btn-primary">
                                 <i class="fas fa-download"></i>
                                 Export
-                            </a>
+                            </a> -->
                         </div>
                     </div>
                 </div>
@@ -155,8 +155,67 @@
                         
                         <!-- Pagination -->
                         @if($equipment->hasPages())
-                            <div class="pagination">
-                                {{ $equipment->appends(request()->query())->links() }}
+                            <div class="pagination-wrapper">
+                                <div class="pagination-info">
+                                    Showing {{ $equipment->firstItem() }} to {{ $equipment->lastItem() }} of {{ $equipment->total() }} results
+                                </div>
+
+                                <nav>
+                                    <ul class="pagination">
+                                        {{-- Previous Page Link --}}
+                                        @if ($equipment->onFirstPage())
+                                            <li class="disabled" aria-disabled="true">
+                                                <span aria-hidden="true">
+                                                    <i class="fas fa-chevron-left"></i> Previous
+                                                </span>
+                                            </li>
+                                        @else
+                                            <li>
+                                                <a href="{{ $equipment->appends(request()->query())->previousPageUrl() }}" rel="prev">
+                                                    <i class="fas fa-chevron-left"></i> Previous
+                                                </a>
+                                            </li>
+                                        @endif
+
+                                        {{-- Page Number Links --}}
+                                        @foreach ($equipment->appends(request()->query())->getUrlRange(1, $equipment->lastPage()) as $page => $url)
+                                            @if ($page == $equipment->currentPage())
+                                                <li class="active" aria-current="page">
+                                                    <span>{{ $page }}</span>
+                                                </li>
+                                            @else
+                                                <li>
+                                                    <a href="{{ $url }}">{{ $page }}</a>
+                                                </li>
+                                            @endif
+                                        @endforeach
+
+                                        {{-- Next Page Link --}}
+                                        @if ($equipment->hasMorePages())
+                                            <li>
+                                                <a href="{{ $equipment->appends(request()->query())->nextPageUrl() }}" rel="next">
+                                                    Next <i class="fas fa-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        @else
+                                            <li class="disabled" aria-disabled="true">
+                                                <span aria-hidden="true">
+                                                    Next <i class="fas fa-chevron-right"></i>
+                                                </span>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </nav>
+
+                                <div class="items-per-page">
+                                    <label for="perPage">Show:</label>
+                                    <select id="perPage" onchange="changePerPage(this.value)">
+                                        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
+                                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                        <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                                    </select>
+                                </div>
                             </div>
                         @endif
                     @else
@@ -173,14 +232,12 @@
 
     <script>
         $(document).ready(function() {
-            // Setup CSRF token for AJAX
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
 
-            // Search functionality
             let searchTimeout;
             $('#searchInput').on('input', function() {
                 clearTimeout(searchTimeout);
@@ -193,12 +250,11 @@
                     } else {
                         url.searchParams.delete('search');
                     }
-                    url.searchParams.delete('page'); // Reset to first page
+                    url.searchParams.delete('page');
                     window.location.href = url.toString();
                 }, 500);
             });
 
-            // Condition filter
             $('#conditionFilter').on('change', function() {
                 const condition = $(this).val();
                 const url = new URL(window.location.href);
@@ -207,10 +263,17 @@
                 } else {
                     url.searchParams.delete('condition');
                 }
-                url.searchParams.delete('page'); // Reset to first page
+                url.searchParams.delete('page');
                 window.location.href = url.toString();
             });
         });
+
+        function changePerPage(perPage) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('per_page', perPage);
+            url.searchParams.delete('page');
+            window.location.href = url.toString();
+        }
     </script>
 
     @include('layouts.core.footer')

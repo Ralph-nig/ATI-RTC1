@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
-use App\Services\EquipmentMaintenancePredictionService;
 
 class Equipment extends Model
 {
@@ -16,23 +15,20 @@ class Equipment extends Model
 
     protected $fillable = [
         'property_number',
+        'document_type',
+        'document_number',
         'article',
         'classification',
         'description',
         'unit_of_measurement',
         'unit_value',
+        'quantity',
         'condition',
         'disposal_method',
         'disposal_details',
         'acquisition_date',
-        'maintenance_schedule_start',
-        'maintenance_schedule_end',
-        'maintenance_status',
-        'maintenance_prediction_days',
-        'maintenance_prediction_reasoning',
-        'maintenance_prediction_confidence',
-        'last_maintenance_check',
         'location',
+        'responsibility_center',
         'responsible_person',
         'remarks',
         'user_id'
@@ -40,9 +36,6 @@ class Equipment extends Model
 
     protected $casts = [
         'acquisition_date' => 'date',
-        'maintenance_schedule_start' => 'date',
-        'maintenance_schedule_end' => 'date',
-        'last_maintenance_check' => 'datetime',
         'unit_value' => 'decimal:2'
     ];
 
@@ -54,42 +47,50 @@ class Equipment extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** Departments available as Responsibility Centers */
+    const DEPARTMENTS = ['ISS', 'AFU', 'CDMS', 'PAS', 'PMEU', 'OCD', 'DORM'];
+
     /**
-     * Get maintenance logs for this equipment
+     * Generate next document number for the given type and month.
+     * Format: {TYPE}-{YYYY}-{MM}-{NNNN}  e.g. ICS-2026-04-0001
+     * Counter resets every month.
      */
-    public function maintenanceLogs()
+    public static function generateDocumentNumber(string $type): string
     {
-        return $this->hasMany(EquipmentMaintenanceLog::class);
+        $year  = now()->format('Y');
+        $month = now()->format('m');
+        $prefix = "{$type}-{$year}-{$month}-";
+
+        $last = self::where('document_type', $type)
+            ->where('document_number', 'like', "{$prefix}%")
+            ->orderByDesc('document_number')
+            ->value('document_number');
+
+        $next = $last ? ((int) substr($last, -4)) + 1 : 1;
+
+        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
     /**
-     * Get maintenance warnings for this equipment
+     * Suggest document type based on unit value.
+     * ICS  → below ₱50,000
+     * PAR  → ₱50,000 and above
      */
-    public function maintenanceWarnings()
+    public static function suggestDocumentType(float $unitValue): string
     {
-        return $this->hasMany(EquipmentMaintenanceWarning::class);
+        return $unitValue < 50000 ? 'ICS' : 'PAR';
     }
 
-    /**
-     * Get active maintenance warnings
-     */
-    public function activeWarnings()
-    {
-        return $this->maintenanceWarnings()->active();
-    }
 
-    /**
-     * Generate property number in format YYYY-MM-DD-ID
-     */
     public static function generatePropertyNumber()
     {
         $date = Carbon::now()->format('Y-m-d');
         $lastEquipment = self::whereDate('created_at', Carbon::today())
             ->orderBy('id', 'desc')
             ->first();
-        
+
         $nextId = $lastEquipment ? $lastEquipment->id + 1 : 1;
-        
+
         return $date . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 
@@ -125,190 +126,12 @@ class Equipment extends Model
         if (!$this->disposal_method) {
             return 'N/A';
         }
-        
+
         if ($this->disposal_method === 'Others' && $this->disposal_details) {
             return 'Others: ' . $this->disposal_details;
         }
-        
+
         return $this->disposal_method;
-    }
-
-    /**
-     * Check if maintenance is due (within 7 days)
-     */
-    public function isMaintenanceDue()
-    {
-        if (!$this->maintenance_schedule_end) {
-            return false;
-        }
-
-        $today = Carbon::today();
-        $daysUntilDue = $today->diffInDays($this->maintenance_schedule_end, false);
-
-        return $daysUntilDue <= 7 && $daysUntilDue >= 0;
-    }
-
-    /**
-     * Check if maintenance is overdue
-     */
-    public function isMaintenanceOverdue()
-    {
-        if (!$this->maintenance_schedule_end) {
-            return false;
-        }
-
-        return Carbon::today()->isAfter($this->maintenance_schedule_end);
-    }
-
-    /**
-     * Get days until maintenance is due (negative if overdue)
-     */
-    public function getDaysUntilMaintenanceAttribute()
-    {
-        if (!$this->maintenance_schedule_end) {
-            return null;
-        }
-
-        return Carbon::today()->diffInDays($this->maintenance_schedule_end, false);
-    }
-
-    /**
-     * Get maintenance status badge information
-     */
-    public function getMaintenanceStatusBadgeAttribute()
-    {
-        if ($this->isMaintenanceOverdue()) {
-            return [
-                'text' => 'Overdue',
-                'class' => 'danger',
-                'icon' => 'exclamation-triangle',
-                'color' => '#dc3545'
-            ];
-        }
-
-        if ($this->isMaintenanceDue()) {
-            return [
-                'text' => 'Due Soon',
-                'class' => 'warning',
-                'icon' => 'clock',
-                'color' => '#ffc107'
-            ];
-        }
-
-        if ($this->maintenance_schedule_end) {
-            return [
-                'text' => 'Scheduled',
-                'class' => 'info',
-                'icon' => 'calendar-check',
-                'color' => '#17a2b8'
-            ];
-        }
-
-        return [
-            'text' => 'No Schedule',
-            'class' => 'secondary',
-            'icon' => 'calendar-times',
-            'color' => '#6c757d'
-        ];
-    }
-
-    /**
-     * Update maintenance status automatically
-     */
-    public function updateMaintenanceStatus()
-    {
-        if (!$this->maintenance_schedule_end) {
-            $this->maintenance_status = 'pending';
-        } elseif ($this->isMaintenanceOverdue()) {
-            $this->maintenance_status = 'overdue';
-        } elseif ($this->isMaintenanceDue()) {
-            $this->maintenance_status = 'due';
-        } else {
-            $this->maintenance_status = 'pending';
-        }
-
-        $this->save();
-    }
-
-    /**
-     * NEW: AI-Powered maintenance schedule prediction
-     */
-    public function predictMaintenanceScheduleWithAI()
-    {
-        $service = new EquipmentMaintenancePredictionService();
-        $prediction = $service->predictMaintenanceSchedule($this);
-        
-        $today = Carbon::today();
-        
-        $this->maintenance_schedule_start = $today;
-        $this->maintenance_schedule_end = $today->copy()->addDays($prediction['days']);
-        $this->maintenance_status = 'pending';
-        $this->maintenance_prediction_days = $prediction['days'];
-        $this->maintenance_prediction_reasoning = $prediction['reasoning'];
-        $this->maintenance_prediction_confidence = $prediction['confidence'];
-        
-        $this->save();
-        
-        return $prediction;
-    }
-
-    /**
-     * NEW: Re-predict after maintenance action
-     */
-    public function repredictMaintenanceAfterAction(string $actionTaken, string $conditionAfter)
-    {
-        $service = new EquipmentMaintenancePredictionService();
-        $prediction = $service->repredictAfterMaintenance($this, $actionTaken, $conditionAfter);
-        
-        $today = Carbon::today();
-        
-        $this->maintenance_schedule_start = $today;
-        $this->maintenance_schedule_end = $today->copy()->addDays($prediction['days']);
-        $this->maintenance_status = 'pending';
-        $this->maintenance_prediction_days = $prediction['days'];
-        $this->maintenance_prediction_reasoning = $prediction['reasoning'];
-        $this->maintenance_prediction_confidence = $prediction['confidence'];
-        $this->last_maintenance_check = now();
-        
-        $this->save();
-        
-        return $prediction;
-    }
-
-    /**
-     * DEPRECATED: Use predictMaintenanceScheduleWithAI() instead
-     */
-    public function setAutoMaintenanceSchedule()
-    {
-        return $this->predictMaintenanceScheduleWithAI();
-    }
-
-    /**
-     * DEPRECATED: Use repredictMaintenanceAfterAction() instead
-     */
-    public function rescheduleMaintenanceFor30Days()
-    {
-        // Fallback to 30 days if AI fails
-        $today = Carbon::today();
-        
-        $this->maintenance_schedule_start = $today;
-        $this->maintenance_schedule_end = $today->copy()->addDays(30);
-        $this->maintenance_status = 'pending';
-        $this->last_maintenance_check = now();
-        
-        $this->save();
-    }
-
-    /**
-     * Check if equipment needs maintenance warning
-     */
-    public function needsMaintenanceWarning()
-    {
-        if (!$this->maintenance_schedule_end) {
-            return false;
-        }
-
-        return $this->isMaintenanceDue() || $this->isMaintenanceOverdue();
     }
 
     /**
@@ -328,7 +151,7 @@ class Equipment extends Model
     public function scopeSearch($query, $search)
     {
         if ($search) {
-            return $query->where(function($q) use ($search) {
+            return $query->where(function ($q) use ($search) {
                 $q->where('article', 'like', "%{$search}%")
                   ->orWhere('classification', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%")
@@ -338,74 +161,5 @@ class Equipment extends Model
             });
         }
         return $query;
-    }
-
-    /**
-     * Scope for equipment with maintenance due
-     */
-    public function scopeMaintenanceDue($query)
-    {
-        return $query->whereNotNull('maintenance_schedule_end')
-                    ->whereDate('maintenance_schedule_end', '>=', Carbon::today())
-                    ->whereDate('maintenance_schedule_end', '<=', Carbon::today()->addDays(7));
-    }
-
-    /**
-     * Scope for equipment with overdue maintenance
-     */
-    public function scopeMaintenanceOverdue($query)
-    {
-        return $query->whereNotNull('maintenance_schedule_end')
-                    ->whereDate('maintenance_schedule_end', '<', Carbon::today());
-    }
-
-    /**
-     * Scope for equipment requiring maintenance attention
-     */
-    public function scopeRequiringMaintenance($query)
-    {
-        return $query->whereNotNull('maintenance_schedule_end')
-                    ->where(function($q) {
-                        $q->whereDate('maintenance_schedule_end', '<=', Carbon::today()->addDays(7));
-                    });
-    }
-
-    /**
-     * Boot method to handle model events
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // UPDATED: Use AI prediction when creating equipment
-        static::created(function ($equipment) {
-            try {
-                $equipment->predictMaintenanceScheduleWithAI();
-            } catch (\Exception $e) {
-                \Log::error('AI prediction failed for new equipment: ' . $e->getMessage());
-                // Fallback to 30 days
-                $today = Carbon::today();
-                $equipment->maintenance_schedule_start = $today;
-                $equipment->maintenance_schedule_end = $today->copy()->addDays(30);
-                $equipment->maintenance_status = 'pending';
-                $equipment->save();
-            }
-        });
-
-        // Automatically update maintenance status before saving
-        static::saving(function ($equipment) {
-            if ($equipment->maintenance_schedule_end && !$equipment->isDirty('maintenance_schedule_start')) {
-                $today = Carbon::today();
-                $maintenanceDate = Carbon::parse($equipment->maintenance_schedule_end);
-                
-                if ($today->isAfter($maintenanceDate)) {
-                    $equipment->maintenance_status = 'overdue';
-                } elseif ($today->diffInDays($maintenanceDate, false) <= 7) {
-                    $equipment->maintenance_status = 'due';
-                } else {
-                    $equipment->maintenance_status = 'pending';
-                }
-            }
-        });
     }
 }

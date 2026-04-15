@@ -12,32 +12,40 @@
     <link rel="stylesheet" href="{{ asset('css/announcement.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
-    <style>       
-        .reports-content {
-            flex: 1;
-            background: #d4edda;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            border-radius: 15px;
-            min-height: 100vh; /* Extend green background to full viewport height */
+
+    <style>
+        /* Force green container */
+        .supplies-container {
+            background-color: #296218 !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            margin: 20px 0 !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
         }
 
-        .reports-title {
-            color: #2c3e50;
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        .supplies-header {
+            background: rgba(255,255,255,0.15) !important;
+            border-radius: 12px !important;
+            padding: 20px !important;
+            margin-bottom: 20px !important;
+            backdrop-filter: blur(10px) !important;
         }
 
+        .supplies-title {
+            color: white !important;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            margin: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        /* Report grid */
         .reports-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
-            max-width: 1135px;
         }
 
         .report-button {
@@ -52,7 +60,6 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
-            border: 2px solid transparent;
             text-decoration: none;
             display: flex;
             flex-direction: column;
@@ -82,7 +89,6 @@
             background-color: white;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-            border-color: rgba(255,255,255,0.3);
             color: #2c3e50;
         }
 
@@ -90,16 +96,7 @@
             transform: translateY(0);
         }
 
-        /* Responsive design */
         @media (max-width: 768px) {
-            .reports-content {
-                padding: 20px;
-            }
-
-            .reports-title {
-                font-size: 24px;
-            }
-
             .reports-grid {
                 grid-template-columns: 1fr;
                 gap: 15px;
@@ -131,8 +128,7 @@
         @include('layouts.core.sidebar')
         <div class="details">
             @include('layouts.core.header')
-            
-            <!-- Reports Content -->
+
             <div class="supplies-container">
                 <div class="supplies-header">
                     <h1 class="supplies-title">
@@ -165,16 +161,24 @@
                         <div class="report-title">RPC PPE</div>
                         <div class="report-subtitle">Report on the Property Plant and Equipment</div>
                     </a>
+                    <a href="{{ route('client.report.par') }}" class="report-button">
+                        <i class="fas fa-file-signature report-icon"></i>
+                        <div class="report-title">PAR</div>
+                        <div class="report-subtitle">Property Acknowledgment Receipt</div>
+                    </a>
+                    <a href="{{ route('client.report.ics') }}" class="report-button">
+                        <i class="fas fa-clipboard-check report-icon"></i>
+                        <div class="report-title">ICS</div>
+                        <div class="report-subtitle">Inventory Custodian Slip</div>
+                    </a>
                 </div>
             </div>
+
         </div>
-        </div>   
     </div>
 
     <script>
-        // Add any additional JavaScript functionality here
         $(document).ready(function() {
-            // Add loading states or animations if needed
             $('.report-button').on('click', function() {
                 $(this).css('opacity', '0.7');
             });

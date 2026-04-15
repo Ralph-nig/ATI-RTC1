@@ -237,41 +237,9 @@
         <div class="details">
             @include('layouts.core.header')
             @include('layouts.core.footer')
-            
-            <!-- AI Prediction Card -->
-            @if($equipment->maintenance_prediction_days)
+        
             <div class="supplies-container">
-                <div class="ai-prediction-card">
-                    <h3>
-                        <i class="fas fa-robot"></i>
-                        AI Maintenance Prediction
-                    </h3>
-                    <div class="prediction-grid">
-                        <div class="prediction-item">
-                            <label>Next Check In</label>
-                            <value>{{ $equipment->maintenance_prediction_days }} days</value>
-                        </div>
-                        <div class="prediction-item">
-                            <label>Due Date</label>
-                            <value>{{ $equipment->maintenance_schedule_end ? $equipment->maintenance_schedule_end->format('M d, Y') : 'N/A' }}</value>
-                        </div>
-                        <div class="prediction-item">
-                            <label>AI Confidence</label>
-                            <value>
-                                <span class="confidence-badge confidence-{{ $equipment->maintenance_prediction_confidence }}">
-                                    {{ ucfirst($equipment->maintenance_prediction_confidence) }}
-                                </span>
-                            </value>
-                        </div>
-                    </div>
-                    @if($equipment->maintenance_prediction_reasoning)
-                    <div class="ai-reasoning-box">
-                        <label>AI Reasoning:</label>
-                        <p>{{ $equipment->maintenance_prediction_reasoning }}</p>
-                    </div>
-                    @endif
-                </div>
-                @endif
+
 
                 <div class="card mt-4">
                     <h2><i class="fa-solid fa-box"></i> Equipment Details</h2>
@@ -332,17 +300,14 @@
                         @if(auth()->user()->hasPermission('update'))
                             <a href="{{ route('equipment.edit', $equipment->id) }}" class="btn btn-edit">
                                 <ion-icon name="create-outline"></ion-icon> Edit
-                            </a>
-                            <button onclick="repredictMaintenance()" class="btn btn-ai">
-                                <i class="fas fa-robot"></i> Re-predict with AI
-                            </button>
+                            </a>    
                         @endif
                     </div>
                     @else
                         <p>No equipment data found.</p>
                     @endif
                 </div>
-            </div>
+                
             </div>
         </div>   
     </div>

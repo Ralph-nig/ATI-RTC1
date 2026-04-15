@@ -12,6 +12,7 @@ use App\Http\Controllers\Client\StockCardController;
 use App\Http\Controllers\Client\PropertyCardController;
 use App\Http\Controllers\Client\ProfileController;
 use App\Http\Controllers\Client\AnnouncementController;
+use App\Http\Controllers\Client\RisController;
 use App\Http\Controllers\Client\HelpController;
 use App\Http\Controllers\Client\NotificationController;
 use App\Http\Controllers\HomeController;
@@ -19,6 +20,8 @@ use App\Http\Controllers\Client\RsmiController;
 use App\Http\Controllers\Client\RpciController;
 use App\Http\Controllers\Client\RpcPpeController;
 use App\Http\Controllers\Client\PpesController;
+use App\Http\Controllers\Client\ParController;
+use App\Http\Controllers\Client\IcsController;
 use App\Http\Controllers\Client\AboutController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -315,7 +318,20 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::get('/dashboard/low-stock', [DashboardController::class, 'getLowStockItems'])->name('client.dashboard.lowstock');
     
     // User management routes
+    Route::get('users/orgchart', [UserController::class, 'orgchart'])->name('users.orgchart');
+    Route::get('users/{id}/equipment', [UserController::class, 'getEquipment'])->name('users.equipment');
     Route::resource('users', UserController::class);
+
+    // RIS (Requisition for Issuance Slip) routes
+    Route::prefix('ris')->name('client.ris.')->group(function () {
+        Route::get('/',              [RisController::class, 'index'])->name('index');
+        Route::get('/create',        [RisController::class, 'create'])->name('create');
+        Route::post('/',             [RisController::class, 'store'])->name('store');
+        Route::get('/{id}',          [RisController::class, 'show'])->name('show');
+        Route::get('/{id}/print',    [RisController::class, 'print'])->name('print');
+        Route::post('/{id}/approve', [RisController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject',  [RisController::class, 'reject'])->name('reject');
+    });
     
     // Profile settings routes
     Route::get('/profile', [ProfileController::class, 'index'])->name('client.profile.index');
@@ -334,10 +350,23 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
         Route::delete('/{id}/permanent', [DeletedSupplyController::class, 'permanentDelete'])->name('permanent-delete');
     });
 
-    // Equipment routes with export functionality
+    // ── Equipment routes ────────────────────────────────────────────────────
+    // NOTE: All explicit GET routes MUST be declared BEFORE Route::resource()
+    // to avoid the {equipment} wildcard swallowing them.
     Route::get('equipment/api/classifications', [EquipmentController::class, 'getClassifications'])->name('equipment.classifications');
+    Route::get('equipment/api/next-document-number', [EquipmentController::class, 'nextDocumentNumber'])->name('equipment.next-document-number');
+
+    // "My Equipment" — shows only items assigned to the logged-in user
+    Route::get('equipment/my', [EquipmentController::class, 'myEquipment'])->name('equipment.my');
+
     Route::resource('equipment', EquipmentController::class)->names([
-        'index' => 'client.equipment.index'
+        'index'   => 'client.equipment.index',
+        'create'  => 'equipment.create',
+        'store'   => 'equipment.store',
+        'show'    => 'equipment.show',
+        'edit'    => 'equipment.edit',
+        'update'  => 'equipment.update',
+        'destroy' => 'equipment.destroy',
     ]);
     Route::get('equipment-export', [EquipmentController::class, 'export'])->name('equipment.export');
     
@@ -349,66 +378,65 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     });
 
     // Add this temporary route to web.php
-Route::get('/debug/equipment-maintenance', function() {
-    $equipment = \App\Models\Equipment::whereNotNull('maintenance_schedule_end')->get();
-    
-    $debug = [];
-    foreach ($equipment as $item) {
-        $debug[] = [
-            'article' => $item->article,
-            'maintenance_end' => $item->maintenance_schedule_end,
-            'maintenance_status' => $item->maintenance_status,
-            'days_until' => \Carbon\Carbon::today()->diffInDays($item->maintenance_schedule_end, false),
-            'should_warn' => $item->needsMaintenanceWarning()
-        ];
-    }
-    
-    return response()->json([
-        'total_equipment' => $equipment->count(),
-        'equipment_details' => $debug
-    ]);
-})->middleware('auth');
+    Route::get('/debug/equipment-maintenance', function() {
+        $equipment = \App\Models\Equipment::whereNotNull('maintenance_schedule_end')->get();
+        
+        $debug = [];
+        foreach ($equipment as $item) {
+            $debug[] = [
+                'article' => $item->article,
+                'maintenance_end' => $item->maintenance_schedule_end,
+                'maintenance_status' => $item->maintenance_status,
+                'days_until' => \Carbon\Carbon::today()->diffInDays($item->maintenance_schedule_end, false),
+                'should_warn' => $item->needsMaintenanceWarning()
+            ];
+        }
+        
+        return response()->json([
+            'total_equipment' => $equipment->count(),
+            'equipment_details' => $debug
+        ]);
+    })->middleware('auth');
 
-// Equipment Maintenance Routes - NEW
-Route::prefix('equipment/maintenance')->name('client.equipment.maintenance.')->group(function () {
-    // Warnings page
-    Route::get('/warnings', [EquipmentMaintenanceController::class, 'warnings'])->name('warnings');
-    
-    // Process maintenance action (submit form from warning)
-    Route::post('/process/{warningId}', [EquipmentMaintenanceController::class, 'processMaintenance'])->name('process');
-    
-    // Maintenance Logs page
-    Route::get('/logs', [EquipmentMaintenanceController::class, 'logs'])->name('logs');
-    
-    // Get single log details (AJAX endpoint)
-    Route::get('/logs/{id}', function($id) {
-        $log = \App\Models\EquipmentMaintenanceLog::with(['equipment', 'user'])->findOrFail($id);
-        return view('client.equipment.maintenance.log-details', compact('log'));
-    })->name('log-details');
-    
-    // Export logs to Excel
-    Route::get('/logs/export', [EquipmentMaintenanceController::class, 'exportLogs'])->name('logs.export');
-    
-    // Dashboard warnings API (for widget)
-    Route::get('/api/dashboard-warnings', [EquipmentMaintenanceController::class, 'getDashboardWarnings'])->name('api.dashboard-warnings');
-    
-    // Generate warnings manually (admin only) - FIXED ROUTE
-    Route::get('/generate-warnings', [EquipmentMaintenanceController::class, 'checkAndGenerateWarnings'])->name('generate');
+    // Equipment Maintenance Routes
+    Route::prefix('equipment/maintenance')->name('client.equipment.maintenance.')->group(function () {
+        // Warnings page
+        Route::get('/warnings', [EquipmentMaintenanceController::class, 'warnings'])->name('warnings');
+        
+        // Process maintenance action (submit form from warning)
+        Route::post('/process/{warningId}', [EquipmentMaintenanceController::class, 'processMaintenance'])->name('process');
+        
+        // Maintenance Logs page
+        Route::get('/logs', [EquipmentMaintenanceController::class, 'logs'])->name('logs');
+        
+        // Get single log details (AJAX endpoint)
+        Route::get('/logs/{id}', function($id) {
+            $log = \App\Models\EquipmentMaintenanceLog::with(['equipment', 'user'])->findOrFail($id);
+            return view('client.equipment.maintenance.log-details', compact('log'));
+        })->name('log-details');
+        
+        // Export logs to Excel
+        Route::get('/logs/export', [EquipmentMaintenanceController::class, 'exportLogs'])->name('logs.export');
+        
+        // Dashboard warnings API (for widget)
+        Route::get('/api/dashboard-warnings', [EquipmentMaintenanceController::class, 'getDashboardWarnings'])->name('api.dashboard-warnings');
+        
+        // Generate warnings manually (admin only)
+        Route::get('/generate-warnings', [EquipmentMaintenanceController::class, 'checkAndGenerateWarnings'])->name('generate');
 
-    // AI Re-prediction endpoint
-Route::post('/repredict/{equipmentId}', [EquipmentMaintenanceController::class, 'repredictMaintenance'])
-    ->name('repredict');
+        // AI Re-prediction endpoint
+        Route::post('/repredict/{equipmentId}', [EquipmentMaintenanceController::class, 'repredictMaintenance'])
+            ->name('repredict');
 
-// Get AI prediction details (AJAX)
-Route::get('/prediction/{equipmentId}', [EquipmentMaintenanceController::class, 'showPredictionDetails'])
-    ->name('prediction.details');
-    // Inside: Route::prefix('equipment/maintenance')->name('client.equipment.maintenance.')->group(function () {
+        // Get AI prediction details (AJAX)
+        Route::get('/prediction/{equipmentId}', [EquipmentMaintenanceController::class, 'showPredictionDetails'])
+            ->name('prediction.details');
 
-Route::post('/dismiss-notification', function() {
-    session(['maintenance_notification_dismissed_' . date('Y-m-d') => true]);
-    return response()->json(['success' => true]);
-})->name('dismiss-notification');
-});
+        Route::post('/dismiss-notification', function() {
+            session(['maintenance_notification_dismissed_' . date('Y-m-d') => true]);
+            return response()->json(['success' => true]);
+        })->name('dismiss-notification');
+    });
 
     // Report routes
     Route::resource('reports', ReportController::class)->names([
@@ -420,7 +448,7 @@ Route::post('/dismiss-notification', function() {
     Route::get('report/rpci', [ReportController::class, 'rpci'])->name('client.report.rpci');
     Route::get('report/rpc-ppe', [RpcPpeController::class, 'index'])->name('client.report.rpc-ppe');
 
-    // Stock Card routes (Fixed naming convention)
+    // Stock Card routes
     Route::prefix('stockcard')->name('client.stockcard.')->group(function () {
         Route::get('/', [StockCardController::class, 'index'])->name('index');
         Route::get('/show/{id}', [StockCardController::class, 'show'])->name('show');
@@ -437,6 +465,10 @@ Route::post('/dismiss-notification', function() {
 
         // Audit Trail route 
         Route::get('/audit-trail', [StockCardController::class, 'auditTrail'])->name('audit-trail');
+
+        // Movement edit / delete
+        Route::put('/movement/{id}', [StockCardController::class, 'updateMovement'])->name('movement.update');
+        Route::delete('/movement/{id}', [StockCardController::class, 'destroyMovement'])->name('movement.destroy');
     });
 
     Route::resource('propertycard', PropertyCardController::class)->names([
@@ -444,7 +476,6 @@ Route::post('/dismiss-notification', function() {
         'show' => 'client.propertycard.show'
     ]);
     Route::get('propertycard/export/excel/{id}', [PropertyCardController::class, 'exportExcel'])->name('client.propertycard.export.excel');
-    
     
     Route::post('announcement/{id}/reserve', [AnnouncementController::class, 'reserveSupplies'])
         ->name('client.announcement.reserve');
@@ -469,6 +500,20 @@ Route::post('/dismiss-notification', function() {
         'edit' => 'client.announcement.edit',
         'update' => 'client.announcement.update',
         'destroy' => 'client.announcement.destroy'
+    ]);
+
+    // ── RIS (Requisition for Issuance Slip) ────────────────────────────────
+    Route::post('ris/{id}/approve',              [RisController::class, 'approve'])    ->name('client.ris.approve');
+    Route::post('ris/{id}/reject',               [RisController::class, 'reject'])     ->name('client.ris.reject');
+    Route::post('ris/{id}/finalize',             [RisController::class, 'finalize'])   ->name('client.ris.finalize');
+    Route::post('ris/{id}/item/{supplyId}/approve', [RisController::class, 'approveItem'])->name('client.ris.item.approve');
+    Route::post('ris/{id}/item/{supplyId}/reject',  [RisController::class, 'rejectItem']) ->name('client.ris.item.reject');
+    Route::get('ris/{id}/print',                 [RisController::class, 'print'])      ->name('client.ris.print');
+    Route::resource('ris', RisController::class)->only(['index', 'create', 'store', 'show'])->names([
+        'index'  => 'client.ris.index',
+        'create' => 'client.ris.create',
+        'store'  => 'client.ris.store',
+        'show'   => 'client.ris.show',
     ]);
     
     // Help routes 
@@ -505,7 +550,6 @@ Route::prefix('client/report')->group(function () {
 
     // RPCI report routes
     Route::get('/rpci', [RpciController::class, 'index'])->name('client.report.rpci');
-    // Use ReportController export handlers for RPCI quick-export endpoints
     Route::get('/rpci/export/pdf', [App\Http\Controllers\Client\ReportController::class, 'exportRpciPdf'])->name('client.report.rpci.export.pdf');
     Route::get('/rpci/export/excel', [App\Http\Controllers\Client\ReportController::class, 'exportRpciExcel'])->name('client.report.rpci.export.excel');
 
@@ -518,6 +562,13 @@ Route::prefix('client/report')->group(function () {
     Route::get('/rpc-ppe', [RpcPpeController::class, 'index'])->name('client.report.rpc-ppe');
     Route::get('/rpc-ppe/export/pdf', [RpcPpeController::class, 'exportPDF'])->name('client.report.rpc-ppe.export.pdf');
     Route::get('/rpc-ppe/export/excel', [RpcPpeController::class, 'exportExcel'])->name('client.report.rpc-ppe.export.excel');
+
+    // PAR report routes
+    Route::get('/par', [App\Http\Controllers\Client\ParController::class, 'index'])->name('client.report.par');
+    Route::get('/par/{id}/print', [App\Http\Controllers\Client\ParController::class, 'print'])->name('client.report.par.print');
+    
+    Route::get('/ics',            [IcsController::class, 'index'])->name('client.report.ics');
+    Route::get('/ics/{id}/print', [IcsController::class, 'print'])->name('client.report.ics.print');
 });
 
 // Fallback route for authenticated users

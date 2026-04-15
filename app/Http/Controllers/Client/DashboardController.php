@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Supplies;
 use App\Models\Announcement;
+use App\Models\Ris;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -50,18 +51,48 @@ class DashboardController extends Controller
                              ->whereNotNull('category')
                              ->pluck('category')
                              ->filter();
+
+        // RIS stats for requestor dashboard
+        $user      = auth()->user();
+        $pending   = 0;
+        $approved  = 0;
+        $items     = 0;
+        $recentRis = collect();
+
+        if ($user->role === 'requestor') {
+            $pending  = Ris::where('requested_by', $user->id)
+                            ->where('status', 'pending')
+                            ->count();
+
+            $approved = Ris::where('requested_by', $user->id)
+                            ->where('status', 'approved')
+                            ->count();
+
+            $items    = Ris::where('requested_by', $user->id)
+                            ->join('ris_supplies', 'ris_requests.id', '=', 'ris_supplies.ris_id')
+                            ->sum('ris_supplies.quantity_requested');
+
+            $recentRis = Ris::where('requested_by', $user->id)
+                            ->orderBy('created_at', 'desc')
+                            ->limit(5)
+                            ->get();
+        }
         
         return view('home', compact(
             'totalUsers',
             'totalItems',
-            'itemsInStock', 
+            'itemsInStock',
             'recentItems',
             'lowStockItems',
             'publishedAnnouncements',
             'totalValue',
             'lowStockCount',
             'categoriesCount',
-            'categories'
+            'categories',
+            'pending',
+            'approved',
+            'items',
+            'recentRis'
         ));
     }
     
@@ -71,11 +102,11 @@ class DashboardController extends Controller
     public function getStats()
     {
         $stats = [
-            'totalUsers' => User::count(),
-            'totalItems' => Supplies::count(),
-            'itemsInStock' => Supplies::where('quantity', '>', 0)->count(),
-            'totalValue' => Supplies::sum(DB::raw('quantity * unit_price')),
-            'lowStockCount' => Supplies::lowStock()->count(),
+            'totalUsers'      => User::count(),
+            'totalItems'      => Supplies::count(),
+            'itemsInStock'    => Supplies::where('quantity', '>', 0)->count(),
+            'totalValue'      => Supplies::sum(DB::raw('quantity * unit_price')),
+            'lowStockCount'   => Supplies::lowStock()->count(),
             'categoriesCount' => Supplies::distinct()->count('category'),
         ];
         

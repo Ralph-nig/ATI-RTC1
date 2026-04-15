@@ -31,13 +31,14 @@ class UserRequest extends FormRequest
                 'email',
                 Rule::unique('users', 'email')->ignore($userId),
             ],
-            'role' => 'required|in:user,admin',
+            'role' => 'required|in:user,admin,requestor',
             'can_create' => 'nullable|boolean',
             'can_read' => 'nullable|boolean',
             'can_update' => 'nullable|boolean',
             'can_delete' => 'nullable|boolean',
             'can_stock_in' => 'nullable|boolean',
             'can_stock_out' => 'nullable|boolean',
+            'can_request' => 'nullable|boolean',
         ];
 
         // Status is only required for updates
@@ -70,7 +71,7 @@ class UserRequest extends FormRequest
             'password.required' => 'Please enter a password.',
             'password.min' => 'Password must be at least 8 characters long.',
             'password.confirmed' => 'Password confirmation does not match.',
-            'role.required' => 'Please sselect a user role.',
+            'role.required' => 'Please select a user role.',
             'role.in' => 'Invalid role selected.',
             'status.required' => 'Please select a user status.',
             'status.in' => 'Status must be either active or inactive.',

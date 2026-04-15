@@ -93,7 +93,6 @@
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
-            cursor: pointer;
             transition: all 0.3s ease;
         }
 
@@ -205,13 +204,11 @@
         }
 
         @media print {
-            /* Set proper page margins for complete visibility */
             @page {
                 margin: 0.5cm;
                 size: A4 landscape;
             }
 
-            /* Reset body and page styles to match PDF */
             body {
                 background: white !important;
                 margin: 0 !important;
@@ -221,7 +218,6 @@
                 line-height: 1.4 !important;
             }
 
-            /* Hide all unnecessary elements */
             .sidebar,
             .header,
             .back-button,
@@ -265,7 +261,6 @@
                 display: none !important;
             }
 
-            /* Show only content area */
             .container {
                 width: 100% !important;
                 max-width: 100% !important;
@@ -286,7 +281,6 @@
                 box-sizing: border-box !important;
             }
 
-            /* Style the header for print */
             .ppes-header {
                 text-align: center;
                 margin-bottom: 15px;
@@ -308,7 +302,6 @@
                 color: #000;
             }
 
-            /* Show report info for print */
             .report-info {
                 display: block !important;
                 margin: 15px 0;
@@ -338,7 +331,6 @@
                 color: #000;
             }
 
-            /* Style the table for print */
             .report-table-container {
                 padding: 0 !important;
                 margin: 0 auto !important;
@@ -383,12 +375,10 @@
                 font-size: 6px !important;
             }
 
-            /* Ensure all content fits within page */
             * {
                 box-sizing: border-box !important;
             }
 
-            /* Prevent content overflow */
             .ppes-content * {
                 max-width: 100% !important;
             }
@@ -411,6 +401,7 @@
                 <h1>INVENTORY AND INSPECTION REPORT OF UNSERVICEABLE PROPERTY</h1>
                 <h2>(ATI-RTC I)</h2>
             </div>
+
             <div class="report-info">
                 <p><strong>As of {!! isset($header['as_of']) && trim($header['as_of']) !== '' ? e($header['as_of']) : '<span style="border-bottom:1px solid #000;padding:0 50px;display:inline-block;">&nbsp;</span>' !!}</strong></p>
 
@@ -447,75 +438,76 @@
                         <p style="margin:8px 0 0 0; font-weight:600;">Fund Cluster: {!! isset($header['fund_cluster']) && trim($header['fund_cluster']) !== '' ? '<span style="border-bottom:1px solid #000; padding:0 18px;">' . e($header['fund_cluster']) . '</span>' : '<span style="border-bottom:1px solid #000;padding:0 18px;display:inline-block;">&nbsp;</span>' !!}</p>
                     </div>
                 </div>
+            </div>
 
-                {{-- Data filters --}}
-                <div class="filters-section">
-                    <form method="GET" action="{{ route('client.report.ppes') }}" class="filters-form">
-                        <div class="filter-group">
-                            <label>Date From</label>
-                            <input type="date" name="date_from" value="{{ request('date_from') }}">
-                        </div>
+            {{-- Data filters --}}
+            <div class="filters-section">
+                <form method="GET" action="{{ route('client.report.ppes') }}" class="filters-form">
+                    <div class="filter-group">
+                        <label>Date From</label>
+                        <input type="date" name="date_from" value="{{ request('date_from') }}">
+                    </div>
 
-                        <div class="filter-group">
-                            <label>Article</label>
-                            <select name="classification">
-                                <option value="">All Articles</option>
-                                @foreach($classifications as $class)
-                                    <option value="{{ $class }}" {{ request('classification') == $class ? 'selected' : '' }}>
-                                        {{ $class }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+                    <div class="filter-group">
+                        <label>Article</label>
+                        <select name="classification">
+                            <option value="">All Articles</option>
+                            @foreach($classifications as $class)
+                                <option value="{{ $class }}" {{ request('classification') == $class ? 'selected' : '' }}>
+                                    {{ $class }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                        <div class="filter-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-filter"></i> Apply Filters
-                            </button>
-                            <a href="{{ route('client.report.ppes') }}" class="btn btn-secondary">
-                                <i class="fas fa-redo"></i> Reset
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                        <a href="{{ route('client.report.ppes') }}" class="btn btn-secondary">
+                            <i class="fas fa-redo"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
 
-                {{-- Header input form --}}
-                <div class="filters-section" style="margin-top:20px;">
-                    <form method="get" class="filters-form">
+            {{-- Header input form --}}
+            <div class="filters-section" style="margin-top:20px;">
+                <form method="get" class="filters-form">
                     {{-- preserve current filters as hidden inputs --}}
                     <input type="hidden" name="date_from" value="{{ request('date_from') }}">
                     <input type="hidden" name="classification" value="{{ request('classification') }}">
 
-                        <div class="filter-group">
-                            <label>As of</label>
-<input type="date" name="as_of" value="{{ request('as_of') ?? '' }}">
-                        </div>
-                        <div class="filter-group">
-                            <label>Entity Name</label>
-                            <input type="text" name="entity_name" value="{{ request('entity_name') }}">
-                        </div>
-                        <div class="filter-group">
-                            <label>Fund Cluster</label>
-                            <input type="text" name="fund_cluster" value="{{ request('fund_cluster') }}">
-                        </div>
-                        <div class="filter-group">
-                            <label>Accountable Person</label>
-                            <input type="text" name="accountable_person" value="{{ request('accountable_person') }}">
-                        </div>
-                        <div class="filter-group">
-                            <label>Position</label>
-                            <input type="text" name="position" value="{{ request('position') }}">
-                        </div>
-                        <div class="filter-group">
-                            <label>Office</label>
-                            <input type="text" name="office" value="{{ request('office') }}">
-                        </div>
-                        <div class="filter-group">
-                            <button type="submit" class="btn btn-primary">Apply Header</button>
-                            <a href="{{ route('client.report.ppes') }}" class="btn btn-secondary">Reset</a>
-                        </div>
-                    </form>
-                </div>
+                    <div class="filter-group">
+                        <label>As of</label>
+                        <input type="date" name="as_of" value="{{ request('as_of') ?? '' }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Entity Name</label>
+                        <input type="text" name="entity_name" value="{{ request('entity_name') }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Fund Cluster</label>
+                        <input type="text" name="fund_cluster" value="{{ request('fund_cluster') }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Accountable Person</label>
+                        <input type="text" name="accountable_person" value="{{ request('accountable_person') }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Position</label>
+                        <input type="text" name="position" value="{{ request('position') }}">
+                    </div>
+                    <div class="filter-group">
+                        <label>Office</label>
+                        <input type="text" name="office" value="{{ request('office') }}">
+                    </div>
+                    <div class="filter-group">
+                        <button type="submit" class="btn btn-primary">Apply Header</button>
+                        <a href="{{ route('client.report.ppes') }}" class="btn btn-secondary">Reset</a>
+                    </div>
+                </form>
+            </div>
 
             {{-- Floating action export buttons --}}
             @include('client.report._export_fab', [
@@ -596,20 +588,21 @@
                             <td>{{ $item->particulars_articles }}</td>
                             <td>{{ $item->property_no }}</td>
                             <td>{{ $item->qty }}</td>
-                            <td>₱ {{ number_format((float) ($item->unit_cost ?? 0), 2) }}</td>
-                            <td>₱ {{ number_format((float) ($item->total_cost ?? 0), 2) }}</td>
-                            <td>₱ {{ number_format((float) ($item->accumulated_depreciation ?? 0), 2) }}</td>
-                            <td>₱ {{ number_format((float) ($item->accumulated_impairment_losses ?? 0), 2) }}</td>
-                            <td>₱ {{ number_format((float) ($item->carrying_amount ?? 0), 2) }}</td>
+                            <td>{{ number_format((float) ($item->unit_cost ?? 0), 2) }}</td>
+                            <td>{{ number_format((float) ($item->total_cost ?? 0), 2) }}</td>
+                            <td>{{ number_format((float) ($item->accumulated_depreciation ?? 0), 2) }}</td>
+                            <td>{{ number_format((float) ($item->accumulated_impairment_losses ?? 0), 2) }}</td>
+                            <td>{{ number_format((float) ($item->carrying_amount ?? 0), 2) }}</td>
                             <td>{{ $item->remarks }}</td>
-                            <td>{{ $item->sale }}</td>
-                            <td>{{ $item->transfer }}</td>
-                            <td>{{ $item->destruction }}</td>
+                            {{-- Disposal columns: show formatted value or blank --}}
+                            <td>{{ $item->sale !== '' ? '' . number_format((float) $item->sale, 2) : '' }}</td>
+                            <td>{{ $item->transfer !== '' ? '' . number_format((float) $item->transfer, 2) : '' }}</td>
+                            <td>{{ $item->destruction !== '' ? '' . number_format((float) $item->destruction, 2) : '' }}</td>
                             <td>{{ $item->others }}</td>
-                            <td>{{ $item->total_disposal }}</td>
-                            <td>₱ {{ number_format((float) ($item->appraised_value ?? 0), 2) }}</td>
+                            <td>{{ $item->total_disposal !== '' ? '' . number_format((float) $item->total_disposal, 2) : '' }}</td>
+                            <td>{{ number_format((float) ($item->appraised_value ?? 0), 2) }}</td>
                             <td>{{ $item->or_no }}</td>
-                            <td>₱ {{ number_format((float) ($item->amount ?? 0), 2) }}</td>
+                            <td>{{ $item->amount !== '' ? '' . number_format((float) $item->amount, 2) : '' }}</td>
                         </tr>
                         @empty
                         <tr>
@@ -619,3 +612,10 @@
                     </tbody>
                 </table>
             </div>
+
+        </div>{{-- end .ppes-content --}}
+    </div>{{-- end .details --}}
+</div>{{-- end .container --}}
+
+</body>
+</html>

@@ -20,6 +20,10 @@
             
             <div class="supplies-container">
                 <div class="supplies-header">
+                    <a href="{{ route('supplies.index') }}" class="back-button">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Reports
+                    </a>
                     <h1 class="supplies-title">
                         <i class="fas fa-trash-restore"></i>
                         Deleted Items History
@@ -46,10 +50,10 @@
                         </div>
                         
                         <div class="action-buttons">
-                            <a href="{{ route('supplies.index') }}" class="btn btn-secondary">
+                            <!-- <a href="{{ route('supplies.index') }}" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left"></i>
                                 Back to Supplies
-                            </a>
+                            </a> -->
                         </div>
                     </div>
                 </div>

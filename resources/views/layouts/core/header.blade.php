@@ -22,7 +22,7 @@
                 </div>
             </div>
         </div>
-        <div class="user-profile">
+        <a href="{{ route('client.profile.index') }}" class="user-profile">
             <div class="user-avatar">
                 <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}" class="avatar-image">
             </div>
@@ -30,7 +30,7 @@
                 <span class="username">{{ Auth::user()->name }}</span>
                 <span class="user-email">{{ Auth::user()->email }}</span>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
@@ -437,9 +437,9 @@ function loadNotifications() {
 
 function displayNotifications(notifications) {
     const notificationList = document.getElementById('notificationList');
-    
+
     if (!notificationList) return;
-    
+
     if (notifications.length === 0) {
         notificationList.innerHTML = `
             <div class="empty-notifications">
@@ -449,10 +449,10 @@ function displayNotifications(notifications) {
         `;
         return;
     }
-    
+
     notificationList.innerHTML = notifications.map(notification => `
-        <div class="notification-item ${!notification.is_read ? 'unread' : ''}" 
-             onclick="markAsRead(${notification.id}, '${getNotificationUrl(notification)}')">
+        <div class="notification-item ${!notification.is_read ? 'unread' : ''}"
+             onclick="markAsRead(${notification.id})">
             <div class="notification-title">${escapeHtml(notification.title)}</div>
             <div class="notification-message">${escapeHtml(notification.message)}</div>
             <div class="notification-time">${notification.created_date}</div>
@@ -466,16 +466,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function getNotificationUrl(notification) {
-    if (notification.type === 'help_request' || notification.type === 'help_response') {
-        if (notification.data && notification.data.help_request_id) {
-            return `/client/help/${notification.data.help_request_id}`;
-        }
-    }
-    return '#';
-}
-
-function markAsRead(notificationId, url) {
+function markAsRead(notificationId) {
     fetch(`/client/notifications/${notificationId}/mark-as-read`, {
         method: 'POST',
         headers: {
@@ -488,8 +479,9 @@ function markAsRead(notificationId, url) {
         if (data.success) {
             updateNotificationCount();
             closeNotificationDropdown();
-            if (url && url !== '#') {
-                window.location.href = url;
+            // Use the redirect_url the server resolves per notification type
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
             }
         }
     })

@@ -79,19 +79,9 @@
 <body>
     <!-- Logo, Title and Subtitle outside the container -->
     <div class="header-section">
-        <div class="logo">
-            @if(file_exists(public_path('assets/img/BgForLoginAndRegister.png'))) 
-                <img src="{{ asset('assets/img/sample.png') }}" alt="{{ config('app.name', 'AGRISUPPLY') }}">
-                <img src="{{ asset('assets/img/atirtc1logo.jpg') }}" alt="{{ config('app.name', 'AGRISUPPLY') }}">
-            @else
-                <div class="logo-fallback">
-                    {{ substr(config('app.name', 'AGRISUPPLY'), 0, 2) }}
-                </div>
-            @endif
-        </div>
         
-        <h1 class="welcome-title">{{ __('WELCOME BACK') }}</h1>
-        <p class="subtitle"><strong>{{ __('Log in') }}</strong><br>{{ __('Enter your verified email and password for signing in.') }}</p>
+        <h1 class="welcome-title">{{ __('AIMMS') }}</h1>
+        <p class="subtitle"><strong>{{ __('Agricultural Training Institute - Regional Training Center 1') }}</strong><br>{{ __('Inventory Monitoring and Management System') }}</p>
     </div>
 
     <div class="login-container">
@@ -146,11 +136,6 @@
 
             <div class="form-row">
                 <div class="checkbox-wrapper">
-                    <input type="checkbox" 
-                           name="remember" 
-                           id="remember" 
-                           {{ old('remember') ? 'checked' : '' }}>
-                    <label for="remember">{{ __('Remember me') }}</label>
                 </div>
                 
                 <a href="{{ route('password.request') }}" class="forgot-password-link">

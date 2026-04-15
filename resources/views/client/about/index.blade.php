@@ -124,6 +124,30 @@
                 font-size: 11px;
             }
         }
+
+        #about-us-modal .modal-content {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .about-video-wrapper {
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            aspect-ratio: 16 / 9;
+        }
+
+        .about-video-wrapper video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 10px;
+            object-fit: contain;
+        }
+
     </style>
 </head>
 <body>
@@ -151,7 +175,7 @@
                     <button onclick="openAboutUsModal()" class="about-button">
                         <i class="fas fa-users about-icon"></i>
                         <div class="about-title">About Us</div>
-                        <div class="about-subtitle">Meet The4fumlas</div>
+                        <div class="about-subtitle">Meet the Developers</div>
                     </button>
                 </div>
             </div>
@@ -183,6 +207,12 @@
             </div>
             <div class="modal-body">
                 <div class="about-box">
+                    <div class="about-video-wrapper">
+                        <video id="about-us-video" controls preload="auto" poster="{{ asset('assets/img/AboutUs.png') }}">
+                            <!-- <source src="{{ asset('assets/img/MMS_The4mulas_Video.mp4') }}" type="video/mp4"> -->
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
                     <img src="{{ asset('assets/img/AboutUs.png') }}" alt="About Us" style="width: 100%; max-width: 400px; height: auto; margin-bottom: 20px; border-radius: 10px;">
                     <p>We are The 4mulas, a team of passionate Bachelor of Science in Information Technology students from Universidad de Dagupan committed to developing innovative and efficient digital solutions that address real-world challenges. Our capstone project, the Monitoring Management System for ATI-RTC 1 reflects our dedication to improving productivity and simplifying management tasks through technology. 
 Through this project, we aim to support ATI-RTC 1 in achieving a more systematic and reliable digital workflow.</p>
@@ -212,10 +242,21 @@ Through this project, we aim to support ATI-RTC 1 in achieving a more systematic
 
         function openAboutUsModal() {
             document.getElementById('about-us-modal').style.display = 'flex';
+            // Force video to load so it doesn't show black screen
+            const video = document.getElementById('about-us-video');
+            if (video) {
+                video.load();
+            }
         }
 
         function closeAboutUsModal() {
             document.getElementById('about-us-modal').style.display = 'none';
+            // Stop the video when modal is closed
+            const video = document.getElementById('about-us-video');
+            if (video) {
+                video.pause();
+                video.currentTime = 0;
+            }
         }
 
         // Close modals when clicking outside
