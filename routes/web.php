@@ -509,12 +509,10 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     Route::post('ris/{id}/item/{supplyId}/approve', [RisController::class, 'approveItem'])->name('client.ris.item.approve');
     Route::post('ris/{id}/item/{supplyId}/reject',  [RisController::class, 'rejectItem']) ->name('client.ris.item.reject');
     Route::get('ris/{id}/print',                 [RisController::class, 'print'])      ->name('client.ris.print');
-    Route::resource('ris', RisController::class)->only(['index', 'create', 'store', 'show'])->names([
-        'index'  => 'client.ris.index',
-        'create' => 'client.ris.create',
-        'store'  => 'client.ris.store',
-        'show'   => 'client.ris.show',
-    ]);
+    Route::get('ris',                [RisController::class, 'index'])  ->name('client.ris.index');
+    Route::get('ris/create',         [RisController::class, 'create']) ->name('client.ris.create');
+    Route::post('ris',               [RisController::class, 'store'])  ->name('client.ris.store');
+    Route::get('ris/{id}',           [RisController::class, 'show'])   ->name('client.ris.show');
     
     // Help routes 
     Route::resource('help', HelpController::class)->names([
