@@ -10,111 +10,74 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
         'status',
+        'org_unit',          
+        'is_section_head',   
         'can_create',
         'can_read',
         'can_update',
         'can_delete',
         'can_stock_in',
         'can_stock_out',
-        'can_request',   // NEW: for requestor role
+        'can_request',
         'avatar',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<int, string>
-     */
     protected $appends = ['created_date', 'avatar_url'];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'can_create'  => 'boolean',
-            'can_read'    => 'boolean',
-            'can_update'  => 'boolean',
-            'can_delete'  => 'boolean',
-            'can_stock_in'  => 'boolean',
-            'can_stock_out' => 'boolean',
-            'can_request'   => 'boolean', // NEW
+            'password'          => 'hashed',
+            'is_section_head'   => 'boolean',   // NEW
+            'can_create'        => 'boolean',
+            'can_read'          => 'boolean',
+            'can_update'        => 'boolean',
+            'can_delete'        => 'boolean',
+            'can_stock_in'      => 'boolean',
+            'can_stock_out'     => 'boolean',
+            'can_request'       => 'boolean',
         ];
     }
 
-    /**
-     * Get formatted created date
-     */
     public function getCreatedDateAttribute()
     {
         return $this->created_at ? $this->created_at->format('d F, Y') : 'N/A';
     }
 
-    /**
-     * Get avatar URL
-     */
     public function getAvatarUrlAttribute()
     {
         if ($this->avatar) {
             return \Storage::url($this->avatar);
         }
-
         return asset('assets/img/noprofile.jpg');
     }
 
-    /**
-     * Check if user is admin
-     */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    /**
-     * Check if user is requestor
-     */
     public function isRequestor(): bool
     {
         return $this->role === 'requestor';
     }
 
-    /**
-     * Check if user has permission to perform an action
-     */
     public function hasPermission(string $permission): bool
     {
-        // Admins can do everything
-        if ($this->isAdmin()) {
-            return true;
-        }
+        if ($this->isAdmin()) return true;
 
-        // Check specific permission
         return match($permission) {
             'create'    => $this->can_create,
             'read'      => $this->can_read,
@@ -122,14 +85,11 @@ class User extends Authenticatable
             'delete'    => $this->can_delete,
             'stock_in'  => $this->can_stock_in,
             'stock_out' => $this->can_stock_out,
-            'request'   => $this->can_request,  // NEW
+            'request'   => $this->can_request,
             default     => false,
         };
     }
 
-    /**
-     * Relationships
-     */
     public function helpRequests()
     {
         return $this->hasMany(HelpRequest::class);
@@ -150,33 +110,21 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class)->where('is_read', false);
     }
 
-    /**
-     * Get audit trails performed by this user
-     */
     public function auditTrails()
     {
         return $this->hasMany(AuditTrail::class)->orderBy('created_at', 'desc');
     }
 
-    /**
-     * Get recent audit trails for this user
-     */
     public function recentAuditTrails(int $limit = 10)
     {
         return $this->auditTrails()->limit($limit)->get();
     }
 
-    /**
-     * Get stock movements performed by this user
-     */
     public function stockMovements()
     {
         return $this->hasMany(StockMovement::class);
     }
 
-    /**
-     * Get recent stock movements by this user
-     */
     public function recentStockMovements(int $limit = 10)
     {
         return $this->stockMovements()->orderBy('created_at', 'desc')->limit($limit)->get();

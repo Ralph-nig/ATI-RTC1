@@ -13,12 +13,8 @@ use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     */
     public function __construct()
     {
-        // Only allow admin users to access user management
         $this->middleware(function ($request, $next) {
             if (!auth()->check() || !auth()->user()->isAdmin()) {
                 if ($request->expectsJson()) {
@@ -30,35 +26,23 @@ class UserController extends Controller
         });
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $data['user'] = User::all();
         return view('client.users.index', $data);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return view('client.users.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(UserRequest $request)
     {
         $validated = $request->validated();
-
-        // Store the plain password before hashing
         $plainPassword = $validated['password'];
 
         if ($validated['role'] === 'admin') {
-            // Admin gets all permissions
             $validated['can_create']    = true;
             $validated['can_read']      = true;
             $validated['can_update']    = true;
@@ -67,7 +51,6 @@ class UserController extends Controller
             $validated['can_stock_out'] = true;
             $validated['can_request']   = false;
         } elseif ($validated['role'] === 'requestor') {
-            // Requestor only gets can_request; all other permissions locked off
             $validated['can_create']    = false;
             $validated['can_read']      = false;
             $validated['can_update']    = false;
@@ -76,7 +59,6 @@ class UserController extends Controller
             $validated['can_stock_out'] = false;
             $validated['can_request']   = true;
         } else {
-            // Regular user — use submitted checkboxes
             $validated['can_create']    = $request->boolean('can_create', false);
             $validated['can_read']      = $request->boolean('can_read', true);
             $validated['can_update']    = $request->boolean('can_update', false);
@@ -91,40 +73,28 @@ class UserController extends Controller
 
         $user = User::create($validated);
 
-        // Send credentials email
         try {
             Mail::to($user->email)->send(new UserCredentialMail($user, $plainPassword));
-
             return redirect()->route('users.index')
-                ->with('success', 'User has been successfully created and credentials have been sent to their email!');
+                ->with('success', 'User created and credentials sent to their email!');
         } catch (\Exception $e) {
             Log::error('Failed to send credential email: ' . $e->getMessage());
-
             return redirect()->route('users.index')
-                ->with('warning', 'User created successfully, but failed to send credentials email. Please share credentials manually.');
+                ->with('warning', 'User created, but failed to send credentials email. Please share manually.');
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
         $data['user'] = User::findOrFail($id);
         return view('client.users.edit', $data);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UserRequest $request, string $id)
     {
         $validated = $request->validated();
@@ -161,7 +131,6 @@ class UserController extends Controller
             $user->can_request   = false;
         }
 
-        // Only update password if provided
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
@@ -169,17 +138,13 @@ class UserController extends Controller
         $user->save();
 
         return redirect()->route('users.index')
-            ->with('success', 'User information has been updated successfully!');
+            ->with('success', 'User information updated successfully!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $user = User::findOrFail($id);
 
-        // Prevent admin from deleting their own account
         if ($user->id === auth()->user()->id) {
             return response()->json(['error' => 'You cannot delete your own account.'], 403);
         }
@@ -194,9 +159,90 @@ class UserController extends Controller
      */
     public function orgchart()
     {
-        $data['user'] = User::all();
-        return view('client.users.orgchart', $data);
+        $allUsers = User::all();
+
+        // Build head map directly from users table: ['pme' => 7, 'admin' => 3, ...]
+        $orgHeads = $allUsers
+            ->where('is_section_head', true)
+            ->whereNotNull('org_unit')
+            ->pluck('id', 'org_unit')
+            ->toArray();
+
+        return view('client.users.orgchart', [
+            'user'     => $allUsers,
+            'orgHeads' => $orgHeads,
+        ]);
     }
+
+    /**
+     * Assign (or clear) the section head for a given unit.
+     *
+     * POST /users/orgchart/assign-head
+     * Body: { unit: 'pme', user_id: 5 }   (user_id null/empty = clear)
+     *
+     * Rules:
+     *  - Only 1 head per unit (previous head in same unit is demoted).
+     *  - A user cannot be head of two different units simultaneously.
+     */
+    public function assignHead(Request $request)
+    {
+        $request->validate([
+            'unit'    => ['required', 'string', 'in:ocd,pme,admin,cdm,pas,iss'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $unit   = $request->input('unit');
+        $userId = $request->input('user_id') ?: null;
+
+        // Collect IDs of every current head for this unit so JS can strip badges
+        $demotedIds = User::where('is_section_head', true)
+            ->where('org_unit', $unit)
+            ->pluck('id')
+            ->toArray();
+
+        // Demote them all first
+        User::whereIn('id', $demotedIds)
+            ->update(['is_section_head' => false]);
+
+        // Clear only — no new head requested
+        if (!$userId) {
+            return response()->json([
+                'message'     => 'Section head cleared for ' . strtoupper($unit) . '.',
+                'unit'        => $unit,
+                'user_id'     => null,
+                'demoted_ids' => $demotedIds,
+            ]);
+        }
+
+        // Guard: user is already head of a DIFFERENT unit — roll back and reject
+        $conflict = User::where('id', $userId)
+            ->where('is_section_head', true)
+            ->where('org_unit', '!=', $unit)
+            ->first();
+
+        if ($conflict) {
+            User::whereIn('id', $demotedIds)->update(['is_section_head' => true]);
+            return response()->json([
+                'error' => $conflict->name . ' is already the head of '
+                         . strtoupper($conflict->org_unit)
+                         . '. Remove them there first.',
+            ], 422);
+        }
+
+        // Promote new head — stamp org_unit in case it was null/different
+        $user = User::findOrFail($userId);
+        $user->org_unit        = $unit;
+        $user->is_section_head = true;
+        $user->save();
+
+        return response()->json([
+            'message'     => $user->name . ' is now the section head of ' . strtoupper($unit) . '.',
+            'unit'        => $unit,
+            'user_id'     => (int) $userId,
+            'demoted_ids' => $demotedIds,
+        ]);
+    }
+
 
     /**
      * Get equipment assigned to a user (responsible_person matches user name).

@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::dropIfExists('users');
@@ -18,6 +15,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->enum('role', ['user', 'admin', 'requestor'])->default('user');
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('org_unit', ['ocd', 'pme', 'admin', 'cdm', 'pas', 'iss'])->nullable();
+            $table->boolean('is_section_head')->default(false);
             $table->boolean('can_create')->default(false);
             $table->boolean('can_read')->default(true);
             $table->boolean('can_update')->default(false);
@@ -49,9 +48,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

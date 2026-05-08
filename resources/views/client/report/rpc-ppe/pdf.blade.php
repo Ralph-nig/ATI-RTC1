@@ -2,229 +2,268 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPC-PPE Report - PDF</title>
+    <title>RPC-PPE Report</title>
     <style>
-        /* Ensure dompdf can load a Unicode font that contains the ₱ glyph.
-           Place DejaVuSans.ttf in public/fonts/DejaVuSans.ttf */
-        @font-face {
-            font-family: 'DejaVu Sans Custom';
-            src: url('file://{{ str_replace('\\','/', public_path('fonts/DejaVuSans.ttf')) }}') format('truetype');
-            font-weight: normal;
-            font-style: normal;
+        /*
+         * DomPDF rendering notes:
+         * - col/colgroup widths are IGNORED — use inline style="width:X%" on <th> only
+         * - nth-child NOT supported — use explicit classes or inline styles
+         * - table-layout:fixed + th widths is the ONLY reliable column sizing method
+         * - Images must use file:// absolute path
+         * - % widths on th work when table is width:100%
+         */
+
+        @page {
+            size: 297mm 210mm;
+            margin: 10mm 40mm 15mm 40mm;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            /* Use embedded DejaVu Sans to guarantee peso glyph rendering */
-            font-family: 'DejaVu Sans Custom', 'DejaVu Sans', 'Times New Roman', serif;
-            font-size: 10px;
-            line-height: 1.4;
-            margin: 0;
-            padding: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 8pt;
+            line-height: 1.3;
+            color: #000;
+            background: white;
+            margin: 10mm 15mm 15mm 15mm;
         }
 
-        .report-header {
-            text-align: center;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
+        /* ── ATI Header ─────────────────────────────────────────────── */
+        .ati-header { width: 100%; margin-bottom: 3pt; }
+        .ati-header table { width: 100%; border-collapse: collapse; }
+        .ati-header td { padding: 0; border: none; vertical-align: top; }
+        .ati-header .ati-left  { width: 28%; }
+        .ati-header .ati-img   { width: 44%; }
+        .ati-header .ati-right { width: 28%; }
+        .ati-header img { display: block; width: 100%; height: auto; }
+        .ati-divider { border-top: 2pt solid #2d6a2d; margin-bottom: 4pt; }
+
+        /* ── Report title ───────────────────────────────────────────── */
+        .report-title {
+            text-align: center; font-size: 10pt;
+            font-weight: bold; text-transform: uppercase;
+            margin-bottom: 1pt; line-height: 1.2;
+        }
+        .report-asof { text-align: center; font-size: 8pt; margin-bottom: 3pt; }
+
+        /* ── Entity name box ────────────────────────────────────────── */
+        .entity-name-row {
+            border: 1.5pt solid #000;
+            text-align: center; font-weight: bold; font-size: 8pt;
+            padding: 4pt; margin-bottom: 3pt; min-height: 18pt;
         }
 
-        .report-header h1 {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 0;
-            text-transform: uppercase;
+        /* ── Main table ─────────────────────────────────────────────── */
+        /*
+         * Columns tuned to match Image 2 proportions (sum = 100%):
+         *  A(Article)=9%    B(Desc)=20%    C(PropNo)=7.5%  D(UOM)=5.5%
+         *  E(UnitVal)=6.5%  F(AcqDate)=6%  G(QtyCard)=6.5% H(QtyCount)=6.5%
+         *  I(ShtgQty)=3.5%  J(ShtgVal)=3.5% K(Person)=9%  L(Center)=9%
+         *  M(Condition)=8%
+         */
+        table.main {
+            width: 100%; border-collapse: collapse;
+            table-layout: fixed; font-size: 6pt; margin-bottom: 5pt;
+        }
+        table.main th, table.main td {
+            border: 0.75pt solid #000; padding: 2pt 2pt;
+            vertical-align: middle; word-wrap: break-word;
+        }
+        table.main thead th {
+            font-weight: bold; text-align: center;
+            font-size: 6pt; background-color: #ffffff;
+        }
+        table.main tbody tr { height: 16pt; }
+
+        /* Classification banner */
+        tr.banner td {
+            background-color: #ffffff; font-weight: bold;
+            font-size: 6.5pt; text-align: center; padding: 2pt;
+            border: 0.75pt solid #000;
         }
 
-        .report-header p {
-            font-size: 11px;
-            margin: 5px 0;
-        }
+        td.art { font-weight: bold; text-align: center; vertical-align: middle; }
+        td.c   { text-align: center; }
+        td.r   { text-align: right; }
+        td.l   { text-align: left; }
 
-        .entity-info {
-            text-align: center;
-            margin: 15px 0;
-            font-size: 10px;
+        /* ── Signature block ────────────────────────────────────────── */
+        .sig-block { width: 100%; font-size: 7pt; margin-top: 8pt; }
+        .sig-block > table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .sig-block > table > tr > td {
+            vertical-align: top; padding: 0 4pt 0 0; border: none;
         }
-
-        .accountability-info {
-            text-align: center;
-            margin: 15px 0;
-            font-size: 10px;
-            padding: 8px;
-            border: 1px solid #000;
-        }
-
-        .equipment-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #000;
-        }
-
-        .equipment-table th {
-            padding: 4px 2px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #000;
-            background: #f0f0f0;
-            font-size: 7px;
-            text-transform: uppercase;
-        }
-
-        .equipment-table td {
-            padding: 4px 2px;
-            border: 1px solid #000;
-            font-size: 8px;
-        }
-
-        .classification-header-row {
-            background: #e0e0e0 !important;
-        }
-
-        .classification-header-row td {
-            font-weight: bold;
-            font-size: 9px;
-            padding: 6px 2px;
-            text-align: center;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .page-break {
-            page-break-before: always;
-        }
-
-        .footer-info {
-            margin-top: 20px;
-            font-size: 9px;
-            text-align: center;
-        }
-
-        .signature-section {
-            margin-top: 30px;
-            display: table;
-            width: 100%;
-        }
-
-        .signature-line {
-            display: table-cell;
-            width: 50%;
-            text-align: center;
-            vertical-align: top;
-        }
-
-        .signature-line p {
-            margin: 5px 0;
-            font-size: 9px;
-        }
+        .sig-inner { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .sig-inner td { vertical-align: top; border: none; padding: 0; }
+        .sn { font-weight: bold; font-size: 7pt; display: block; }
+        .sr { font-size: 6.5pt; display: block; }
     </style>
 </head>
 <body>
-    <div class="report-header">
-        <h1>REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT</h1>
-        <p>As of {{ $header['as_of'] }}</p>
-    </div>
 
-    <div class="entity-info">
-        <p><strong>Entity Name:</strong> {{ $header['entity_name'] }}</p>
-        <p><strong>Fund Cluster:</strong> {{ $header['fund_cluster'] }}</p>
-    </div>
+{{-- ATI Header --}}
+<div class="ati-header">
+    <table>
+        <tr>
+            <td class="ati-left"></td>
+            <td class="ati-img">
+                @php
+                    $imgPath = public_path('assets/img/ati_header.jpg');
+                    $imgData = file_exists($imgPath)
+                        ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($imgPath))
+                        : '';
+                @endphp
+                @if($imgData)
+                    <img src="{{ $imgData }}" alt="">
+                @endif
+            </td>
+            <td class="ati-right"></td>
+        </tr>
+    </table>
+</div>
+<div class="ati-divider"></div>
 
-    <div class="accountability-info">
-        <p>For which {{ $header['accountable_person'] }}, {{ $header['position'] }}, {{ $header['office'] }} is accountable, having assumed such accountability on {{ isset($header['assumption_date']) && trim($header['assumption_date']) !== '' ? \Carbon\Carbon::parse($header['assumption_date'])->format('F d, Y') : '________________' }}.</p>
-    </div>
+<div class="report-title">REPORT ON THE PHYSICAL COUNT OF PROPERTY PLANT AND EQUIPMENT</div>
+<div class="report-asof">as of {{ $header['as_of'] ?: '' }}</div>
 
-    @if($groupedEquipment->count() > 0)
+@if(!empty($header['entity_name']))
+<div class="entity-name-row">{{ strtoupper($header['entity_name']) }}</div>
+@else
+<div class="entity-name-row">&nbsp;</div>
+@endif
+
+@if($groupedEquipment->count() > 0)
+<table class="main">
+    <thead>
+        <tr>
+            <th rowspan="2" style="width:9%;">ARTICLE</th>
+            <th rowspan="2" style="width:17%;">DESCRIPTION</th>
+            <th rowspan="2" style="width:7%;">PROPERTY NUMBER</th>
+            <th rowspan="2" style="width:5%;">UNIT OF MEASURE</th>
+            <th rowspan="2" style="width:6%;">UNIT VALUE</th>
+            <th rowspan="2" style="width:6%;">ACQUISITION DATE</th>
+            <th rowspan="2" style="width:6%;">QUANTITY PER PROPERTY CARD</th>
+            <th rowspan="2" style="width:6%;">QUANTITY PER PHYSICAL COUNT</th>
+            <th colspan="2" style="width:7%;">SHORTAGE/OVERAGE</th>
+            <th colspan="3" style="width:31%;">REMARKS</th>
+        </tr>
+        <tr>
+            <th style="width:3.5%;">QUANTITY</th>
+            <th style="width:3.5%;">VALUE</th>
+            <th style="width:9%;">PERSON RESPONSIBLE</th>
+            <th style="width:13%;">/RESPONSIBILITY CENTER</th>
+            <th style="width:9%;">CONDITION OF PROPERTIES</th>
+        </tr>
+    </thead>
+    <tbody>
         @foreach($groupedEquipment as $classification => $equipmentItems)
-            <table class="equipment-table">
-                <thead>
+            <tr class="banner">
+                <td colspan="13">{{ strtoupper($classification ?: 'UNCLASSIFIED EQUIPMENT') }}</td>
+            </tr>
+            @foreach($equipmentItems->groupBy('article') as $article => $items)
+                @foreach($items as $index => $equipment)
+                    @php
+                        $hasQty = $equipment->property_number && $equipment->property_number !== '-';
+                        $qty    = $hasQty ? 1 : '';
+                    @endphp
                     <tr>
-                        <th rowspan="2" style="width: 12%;">ARTICLE/ITEM</th>
-                        <th rowspan="2" style="width: 15%;">DESCRIPTION</th>
-                        <th rowspan="2" style="width: 10%;">PROPERTY NUMBER</th>
-                        <th rowspan="2" style="width: 8%;">UNIT OF MEASURE</th>
-                        <th rowspan="2" style="width: 8%;">UNIT VALUE</th>
-                        <th rowspan="2" style="width: 8%;">Acquisition Date</th>
-                        <th rowspan="2" style="width: 6%;">QUANTITY per PROPERTY CARD</th>
-                        <th rowspan="2" style="width: 6%;">QUANTITY per PHYSICAL COUNT</th>
-                        <th colspan="2" style="width: 10%;">SHORTAGE/OVERAGE</th>
-                        <th colspan="3" style="width: 17%;">REMARKS</th>
+                        @if($index === 0)
+                            <td class="art" rowspan="{{ $items->count() }}">{{ $article }}</td>
+                        @endif
+                        <td class="l">{{ $equipment->description ?: '' }}</td>
+                        <td class="c">{{ $equipment->property_number ?: '-' }}</td>
+                        <td class="c">{{ $equipment->unit_of_measurement ?: '' }}</td>
+                        <td class="r">{{ $equipment->unit_value !== null ? number_format((float)$equipment->unit_value, 2) : '' }}</td>
+                        <td class="r">{{ $equipment->acquisition_date ? $equipment->acquisition_date->format('M-d') : '' }}</td>
+                        <td class="c">{{ $qty }}</td>
+                        <td class="c">{{ $qty }}</td>
+                        <td class="c"></td>
+                        <td class="c"></td>
+                        <td class="l">{{ $equipment->responsible_person ?: 'Unknown / Book of the Accountant' }}</td>
+                        <td class="c">{{ $equipment->location ?: '' }}</td>
+                        <td class="c">{{ $equipment->condition ?: '' }}</td>
                     </tr>
+                @endforeach
+            @endforeach
+        @endforeach
+    </tbody>
+</table>
+@endif
+
+@php
+    $cc1_name = $header['f_cc1_name'] ?? 'FRANKLIN A. SALCEDO';
+    $cc1_role = $header['f_cc1_role'] ?? 'Inventory Committee - Chairman';
+    $cc2_name = $header['f_cc2_name'] ?? 'ALYSSA MAE M. ESTRADA';
+    $cc2_role = $header['f_cc2_role'] ?? 'Inventory Committee - Member';
+    $cc3_name = $header['f_cc3_name'] ?? 'AMOR JOYCE M. MARCELO, CPA';
+    $cc3_role = $header['f_cc3_role'] ?? 'Inventory Committee - Member';
+    $cc4_name = $header['f_cc4_name'] ?? 'ANGELIQUE I. PENALBA, CPA';
+    $cc4_role = $header['f_cc4_role'] ?? 'Inventory Committee - Member';
+    $ab_name  = $header['f_ab_name']  ?? 'JOSEPHINE K. ABEN, Ph.D.';
+    $ab_role  = $header['f_ab_role']  ?? 'Assistant Center Director / Authorized Representative';
+    $vb_name  = $header['f_vb_name']  ?? 'JELANIE S. WANAWAN';
+    $vb_role  = $header['f_vb_role']  ?? 'State Auditor II';
+    $vb_role2 = $header['f_vb_role2'] ?? 'OIC - Audit Team Leader';
+@endphp
+
+<div class="sig-block">
+    <table>
+        {{-- Labels row --}}
+        <tr>
+            <td style="width:47%; font-size:7pt; padding-bottom:10pt;">Certified Correct by:</td>
+            <td style="width:25%; font-size:7pt; padding-bottom:10pt;">Approved by:</td>
+            <td style="width:28%; font-size:7pt; padding-bottom:10pt;">Verified by:</td>
+        </tr>
+        {{-- Names + roles row --}}
+        <tr>
+            {{-- Left: cc1/cc2 side-by-side, then cc3/cc4 below --}}
+            <td style="vertical-align:top;">
+                <table class="sig-inner">
                     <tr>
-                        <th style="width: 5%;">Quantity</th>
-                        <th style="width: 5%;">Value</th>
-                        <th style="width: 6%;">Person Responsible</th>
-                        <th style="width: 6%;">Responsibility Center</th>
-                        <th style="width: 5%;">Condition of Properties</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Classification Header -->
-                    <tr class="classification-header-row">
-                        <td colspan="13">
-                            {{ strtoupper($classification ?: 'UNCLASSIFIED EQUIPMENT') }}
+                        <td style="width:50%;">
+                            <span class="sn">{{ $cc1_name }}</span>
+                            <span class="sr">{{ $cc1_role }}</span>
+                        </td>
+                        <td style="width:50%;">
+                            <span class="sn">{{ $cc2_name }}</span>
+                            <span class="sr">{{ $cc2_role }}</span>
                         </td>
                     </tr>
+                    @if($cc3_name)
+                    <tr>
+                        <td style="padding-top:8pt;">
+                            <span class="sn">{{ $cc3_name }}</span>
+                            <span class="sr">{{ $cc3_role }}</span>
+                        </td>
+                        @if($cc4_name)
+                        <td style="padding-top:8pt;">
+                            <span class="sn">{{ $cc4_name }}</span>
+                            <span class="sr">{{ $cc4_role }}</span>
+                        </td>
+                        @endif
+                    </tr>
+                    @endif
+                </table>
+            </td>
 
-                    @php
-                        $groupedByArticle = $equipmentItems->groupBy('article');
-                    @endphp
+            {{-- Middle: Approved by --}}
+            <td style="vertical-align:top;">
+                <span class="sn">{{ $ab_name }}</span>
+                <span class="sr">{{ $ab_role }}</span>
+            </td>
 
-                    @foreach($groupedByArticle as $article => $items)
-                        @foreach($items as $index => $equipment)
-                            <tr>
-                                @if($index === 0)
-                                    <!-- Show article name only for first item -->
-                                    <td rowspan="{{ $items->count() }}" style="vertical-align: middle; font-weight: bold;">
-                                        {{ $article }}
-                                    </td>
-                                @endif
+            {{-- Right: Verified by --}}
+            <td style="vertical-align:top;">
+                <span class="sn">{{ $vb_name }}</span>
+                <span class="sr">{{ $vb_role }}</span>
+                @if($vb_role2)
+                <span class="sr">{{ $vb_role2 }}</span>
+                @endif
+            </td>
+        </tr>
+    </table>
+</div>
 
-                                <td>{{ $equipment->description ?: '-' }}</td>
-                                <td class="text-center">{{ $equipment->property_number }}</td>
-                                <td class="text-center">{{ $equipment->unit_of_measurement }}</td>
-                                <td class="text-right">{{ number_format($equipment->unit_value, 2) }}</td>
-                                <td class="text-center">
-                                    {{ $equipment->acquisition_date ? $equipment->acquisition_date->format('M-d') : '-' }}
-                                </td>
-                                                <td class="text-center">1</td>
-                                                <td class="text-center">1</td>
-                                                <td class="text-center">-</td>
-                                                <td class="text-center">-</td>
-                                <td class="text-center">
-                                    {{ $equipment->responsible_person ?: 'Unknown / Book of the Accountant' }}
-                                </td>
-                                <td class="text-center">
-                                    {{ $equipment->location ?: '-' }}
-                                </td>
-                                <td class="text-center">{{ $equipment->condition }}</td>
-                            </tr>
-                        @endforeach
-                    @endforeach
-                </tbody>
-            </table>
-
-            @if(!$loop->last)
-                <div class="page-break"></div>
-            @endif
-        @endforeach
-    @endif
-
-    <div class="footer-info">
-        <p><strong>Certified Correct:</strong></p>
-        <br><br>
-        <p>___________________________________</p>
-        <p>{{ $header['accountable_person'] }}</p>
-        <p>{{ $header['position'] }}</p>
-        <p>{{ $header['office'] }}</p>
-    </div>
 </body>
 </html>

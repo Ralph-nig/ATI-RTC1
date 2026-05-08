@@ -1,12 +1,32 @@
 @php
     /*
-     * Expects: $u (User model), $avatarColors (array)
-     * Usage: @include('client.users.orgchart._node', ['u' => $user, 'avatarColors' => $avatarColors])
+     * Expects:
+     *   $u            (User model)
+     *   $avatarColors (array)
+     *   $headMap      (array keyed by unit slug → user_id)  — optional
+     *   $headKey      (string unit slug to check against)   — optional
+     *
+     * Usage:
+     *   @include('client.users.orgchart._node', [
+     *       'u'            => $user,
+     *       'avatarColors' => $avatarColors,
+     *       'headMap'      => $orgHeads,
+     *       'headKey'      => 'pme',
+     *   ])
      */
-    $role    = $u->role ?? 'user';
-    $color   = $avatarColors[$role] ?? '#296218';
+    $role     = $u->role ?? 'user';
+    $color    = $avatarColors[$role] ?? '#296218';
     $initials = orgInitials($u->name);
-    $status  = $u->status ?? 'active';
+    $status   = $u->status ?? 'active';
+
+    // Section head: true if the user's own is_section_head flag is set
+    // AND their org_unit matches the slot we're rendering (headKey).
+    // Fallback: check headMap in case the flag hasn't been reloaded yet.
+    $headMap = $headMap ?? [];
+    $headKey = $headKey ?? null;
+    $isHead  = (bool) $u->is_section_head
+               && $headKey !== null
+               && ($u->org_unit === $headKey || ($headMap[$headKey] ?? null) == $u->id);
 
     $perms = [
         'can_create'    => (bool) $u->can_create,
@@ -19,7 +39,8 @@
     ];
 @endphp
 
-<div class="node-card"
+<div class="node-card {{ $isHead ? 'is-section-head' : '' }}"
+     data-user-id="{{ $u->id }}"
      data-name="{{ $u->name }}"
      data-email="{{ $u->email }}"
      data-role="{{ ucfirst($role) }}"
@@ -30,9 +51,13 @@
      data-perms='@json($perms)'
      title="{{ $u->name }} — click for details">
 
+    <span class="section-head-badge" style="{{ $isHead ? '' : 'display:none;' }}">
+        <i class="fas fa-crown" style="font-size:8px;margin-right:3px;"></i>Section Head
+    </span>
+
     <span class="status-dot status-{{ $status }}"></span>
 
-    <div class="node-avatar" style="background: {{ $color }};">
+    <div class="node-avatar" style="background:{{ $color }};">
         {{ $initials }}
     </div>
 

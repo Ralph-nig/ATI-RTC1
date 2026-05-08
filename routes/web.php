@@ -16,6 +16,7 @@ use App\Http\Controllers\Client\RisController;
 use App\Http\Controllers\Client\HelpController;
 use App\Http\Controllers\Client\NotificationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Client\IirupController;
 use App\Http\Controllers\Client\RsmiController;
 use App\Http\Controllers\Client\RpciController;
 use App\Http\Controllers\Client\RpcPpeController;
@@ -319,6 +320,7 @@ Route::prefix('client')->middleware('auth:web')->group(function(){
     
     // User management routes
     Route::get('users/orgchart', [UserController::class, 'orgchart'])->name('users.orgchart');
+    Route::post('users/orgchart/assign-head', [UserController::class, 'assignHead'])->name('orgchart.assignHead');
     Route::get('users/{id}/equipment', [UserController::class, 'getEquipment'])->name('users.equipment');
     Route::resource('users', UserController::class);
 
@@ -560,6 +562,21 @@ Route::prefix('client/report')->group(function () {
     Route::get('/rpc-ppe', [RpcPpeController::class, 'index'])->name('client.report.rpc-ppe');
     Route::get('/rpc-ppe/export/pdf', [RpcPpeController::class, 'exportPDF'])->name('client.report.rpc-ppe.export.pdf');
     Route::get('/rpc-ppe/export/excel', [RpcPpeController::class, 'exportExcel'])->name('client.report.rpc-ppe.export.excel');
+
+        // IIRUP report routes
+    Route::get('/iirup', [IirupController::class, 'index'])->name('client.report.iirup');
+    Route::get('/iirup/export/pdf', [IirupController::class, 'exportPDF'])->name('client.report.iirup.export.pdf');
+    Route::get('/iirup/export/excel', [IirupController::class, 'exportExcel'])->name('client.report.iirup.export.excel');
+
+    // RPC Semi-Expendable Properties (High Value) report routes
+    Route::get('/rpc-semi-high', [App\Http\Controllers\Client\RpcSemiHighController::class, 'index'])->name('client.report.rpc-semi-high');
+    Route::get('/rpc-semi-high/export/pdf', [App\Http\Controllers\Client\RpcSemiHighController::class, 'exportPDF'])->name('client.report.rpc-semi-high.export.pdf');
+    Route::get('/rpc-semi-high/export/excel', [App\Http\Controllers\Client\RpcSemiHighController::class, 'exportExcel'])->name('client.report.rpc-semi-high.export.excel');
+
+    // RPC Semi-Expendable Properties (Low Value) report routes
+    Route::get('/rpc-semi-low', [App\Http\Controllers\Client\RpcSemiLowController::class, 'index'])->name('client.report.rpc-semi-low');
+    Route::get('/rpc-semi-low/export/pdf', [App\Http\Controllers\Client\RpcSemiLowController::class, 'exportPDF'])->name('client.report.rpc-semi-low.export.pdf');
+    Route::get('/rpc-semi-low/export/excel', [App\Http\Controllers\Client\RpcSemiLowController::class, 'exportExcel'])->name('client.report.rpc-semi-low.export.excel');
 
     // PAR report routes
     Route::get('/par', [App\Http\Controllers\Client\ParController::class, 'index'])->name('client.report.par');
